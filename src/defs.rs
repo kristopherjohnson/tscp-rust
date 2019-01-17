@@ -38,28 +38,27 @@ pub const F8: i32 = 5;
 pub const G8: i32 = 6;
 pub const H8: i32 = 7;
 
-// #rust TODO: Make these macros or generics?
-pub fn row(square: i32) -> i32 {
-    square >> 3
+pub fn row(square: usize) -> i32 {
+    (square >> 3) as i32
 }
-pub fn col(square: i32) -> i32 {
-    square & 7
+pub fn col(square: usize) -> i32 {
+    (square & 7) as i32
 }
 
-/* This is the basic description of a move. promote is what
-piece to promote the pawn to, if the move is a pawn
-promotion. bits is a bitfield that describes the move,
-with the following bits:
-
-1	capture
-2	castle
-4	en passant capture
-8	pushing a pawn 2 squares
-16	pawn move
-32	promote
-
-It's union'ed with an integer so two moves can easily
-be compared with each other. */
+/// This is the basic description of a move. promote is what
+/// piece to promote the pawn to, if the move is a pawn
+/// promotion. bits is a bitfield that describes the move,
+/// with the following bits:
+///
+/// 1	capture
+/// 2	castle
+/// 4	en passant capture
+/// 8	pushing a pawn 2 squares
+/// 16	pawn move
+/// 32	promote
+///
+/// It's union'ed with an integer so two moves can easily
+/// be compared with each other.
 
 #[derive(Copy, Clone)]
 pub struct MoveBytes {
@@ -75,16 +74,16 @@ pub union Move {
     pub u: i32,
 }
 
-/* an element of the move stack. it's just a move with a
-score, so it can be sorted by the search functions. */
+/// an element of the move stack. it's just a move with a score, so it can be
+/// sorted by the search functions.
 #[derive(Copy, Clone)]
 pub struct Gen {
     pub m: Move,
     pub score: i32,
 }
 
-/* an element of the history stack, with the information
-necessary to take a move back. */
+/// an element of the history stack, with the information necessary to take a
+/// move back.
 #[derive(Copy, Clone)]
 pub struct Hist {
     pub m: Move,

@@ -5,3 +5,4 @@ authors = ["Kristopher Johnson <kris@kristopherjohnson.net>"]
 edition = "2018"
 
 [dependencies]
+libc = "0.2"

@@ -1,48 +1,50 @@
-//	defs.rs
-//	Tom Kerrigan's Simple Chess Program (TSCP)
+// defs.rs
+// Tom Kerrigan's Simple Chess Program (TSCP)
 //
-//	Copyright 1997 Tom Kerrigan
+// Copyright 1997 Tom Kerrigan
 //
-//  Rust port by Kristopher Johnson
+// Rust port by Kristopher Johnson
+
+pub type Int = i32;
 
 pub const GEN_STACK: usize = 1120;
 pub const MAX_PLY: usize = 32;
 pub const HIST_STACK: usize = 400;
 
-pub const LIGHT: i32 = 0;
-pub const DARK: i32 = 1;
+pub const LIGHT: Int = 0;
+pub const DARK: Int = 1;
 
-pub const PAWN: i32 = 0;
-pub const KNIGHT: i32 = 1;
-pub const BISHOP: i32 = 2;
-pub const ROOK: i32 = 3;
-pub const QUEEN: i32 = 4;
-pub const KING: i32 = 5;
+pub const PAWN: Int = 0;
+pub const KNIGHT: Int = 1;
+pub const BISHOP: Int = 2;
+pub const ROOK: Int = 3;
+pub const QUEEN: Int = 4;
+pub const KING: Int = 5;
 
-pub const EMPTY: i32 = 6;
+pub const EMPTY: Int = 6;
 
 // useful squares
-pub const A1: i32 = 56;
-pub const B1: i32 = 57;
-pub const C1: i32 = 58;
-pub const D1: i32 = 59;
-pub const E1: i32 = 60;
-pub const F1: i32 = 61;
-pub const G1: i32 = 62;
-pub const A8: i32 = 0;
-pub const B8: i32 = 1;
-pub const C8: i32 = 2;
-pub const D8: i32 = 3;
-pub const E8: i32 = 4;
-pub const F8: i32 = 5;
-pub const G8: i32 = 6;
-pub const H8: i32 = 7;
+pub const A1: Int = 56;
+pub const B1: Int = 57;
+pub const C1: Int = 58;
+pub const D1: Int = 59;
+pub const E1: Int = 60;
+pub const F1: Int = 61;
+pub const G1: Int = 62;
+pub const A8: Int = 0;
+pub const B8: Int = 1;
+pub const C8: Int = 2;
+pub const D8: Int = 3;
+pub const E8: Int = 4;
+pub const F8: Int = 5;
+pub const G8: Int = 6;
+pub const H8: Int = 7;
 
-pub fn row(square: usize) -> i32 {
-    (square >> 3) as i32
+pub fn row(square: usize) -> Int {
+    (square >> 3) as Int
 }
-pub fn col(square: usize) -> i32 {
-    (square & 7) as i32
+pub fn col(square: usize) -> Int {
+    (square & 7) as Int
 }
 
 /// This is the basic description of a move. promote is what
@@ -71,7 +73,7 @@ pub struct MoveBytes {
 #[derive(Copy, Clone)]
 pub union Move {
     pub b: MoveBytes,
-    pub u: i32,
+    pub u: Int,
 }
 
 /// an element of the move stack. it's just a move with a score, so it can be
@@ -79,7 +81,7 @@ pub union Move {
 #[derive(Copy, Clone)]
 pub struct Gen {
     pub m: Move,
-    pub score: i32,
+    pub score: Int,
 }
 
 /// an element of the history stack, with the information necessary to take a
@@ -87,9 +89,9 @@ pub struct Gen {
 #[derive(Copy, Clone)]
 pub struct Hist {
     pub m: Move,
-    pub capture: i32,
-    pub castle: i32,
-    pub ep: i32,
-    pub fifty: i32,
-    pub hash: i32,
+    pub capture: Int,
+    pub castle: Int,
+    pub ep: Int,
+    pub fifty: Int,
+    pub hash: Int,
 }

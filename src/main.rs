@@ -1,22 +1,26 @@
-//  main.rs
-//  Tom Kerrigan's Simple Chess Program (TSCP)
+// main.rs
+// Tom Kerrigan's Simple Chess Program (TSCP)
 //
-//  Copyright 1997 Tom Kerrigan
+// Copyright 1997 Tom Kerrigan
 //
-//  Rust port by Kristopher Johnson
+// Rust port by Kristopher Johnson
+
+// #rust Remove these when we finish translating all modules.
+#![allow(dead_code)]
+#![allow(unused_variables)]
+#![allow(unused_mut)]
+
+extern crate libc;
 
 mod board;
 mod data;
 mod defs;
-
-extern crate libc;
 
 use crate::board::{init_board, init_hash};
 use crate::data::{MAX_DEPTH, MAX_TIME};
 use crate::defs::EMPTY;
 
 fn main() {
-    // #rust TODO: Is there a cleaner way to print multiline text?
     println!("");
     println!("Tom Kerrigan's Simple Chess Program (TSCP)");
     println!("version 1.81b, 3/10/16");
@@ -37,7 +41,7 @@ fn main() {
         init_board();
         // open_book();
         // gen();
-        let mut computer_side: i32 = EMPTY;
+        let mut computer_side = EMPTY;
         MAX_TIME = 1 << 25;
         MAX_DEPTH = 4;
         loop {

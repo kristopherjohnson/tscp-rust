@@ -1,15 +1,15 @@
-//  board.rs
-//  Tom Kerrigan's Simple Chess Program (TSCP)
+// board.rs
+// Tom Kerrigan's Simple Chess Program (TSCP)
 //
-//  Copyright 1997 Tom Kerrigan
+// Copyright 1997 Tom Kerrigan
 //
-//  Rust port by Kristopher Johnson
+// Rust port by Kristopher Johnson
 
 use crate::data::{
     CASTLE, COLOR, EP, FIFTY, FIRST_MOVE, HASH, HASH_EP, HASH_PIECE, HASH_SIDE, HPLY, INIT_COLOR,
     INIT_PIECE, MAILBOX, MAILBOX64, OFFSET, OFFSETS, PIECE, PLY, SIDE, SLIDE, XSIDE,
 };
-use crate::defs::{col, DARK, EMPTY, KING, LIGHT, PAWN};
+use crate::defs::{col, Int, DARK, EMPTY, KING, LIGHT, PAWN};
 
 /// init_board() sets the board to the initial game state.
 pub unsafe fn init_board() {
@@ -50,9 +50,9 @@ pub unsafe fn init_hash() {
 /// hash_rand() XORs some shifted random numbers together to make sure
 /// we have good coverage of all 32 bits. (rand() returns 16-bit numbers
 /// on some systems.)
-unsafe fn hash_rand() -> i32 {
-    let mut r: i32 = 0;
-    for i in 0..32 {
+unsafe fn hash_rand() -> Int {
+    let mut r = 0;
+    for _ in 0..32 {
         r ^= libc::rand() << 1;
     }
     r
@@ -72,7 +72,7 @@ unsafe fn hash_rand() -> i32 {
 
 unsafe fn set_hash() {
     HASH = 0;
-    for i in 0..COLOR.len() {
+    for i in 0..64 {
         if COLOR[i] != EMPTY {
             HASH ^= HASH_PIECE[COLOR[i] as usize][PIECE[i] as usize][i as usize];
         }
@@ -89,10 +89,10 @@ unsafe fn set_hash() {
 /// scans the board to find side s's king and calls attack() to see if it's
 /// being attacked.
 
-unsafe fn in_check(s: i32) -> bool {
+unsafe fn in_check(s: Int) -> bool {
     for i in 0..64 {
         if PIECE[i] == KING && COLOR[i] == s {
-            return attack(i as i32, s ^ 1);
+            return attack(i as Int, s ^ 1);
         }
     }
     std::panic!("in_check: shouldn't get here");
@@ -101,28 +101,28 @@ unsafe fn in_check(s: i32) -> bool {
 /// attack() returns TRUE if square sq is being attacked by side s and FALSE
 /// otherwise.
 
-unsafe fn attack(sq: i32, s: i32) -> bool {
+unsafe fn attack(sq: Int, s: Int) -> bool {
     for i in 0..64 {
         if COLOR[i] == s {
             if PIECE[i] == PAWN {
                 if s == LIGHT {
-                    if col(i) != 0 && (i as i32) - 9 == sq {
+                    if col(i) != 0 && (i as Int) - 9 == sq {
                         return true;
                     }
-                    if col(i) != 7 && (i as i32) - 7 == sq {
+                    if col(i) != 7 && (i as Int) - 7 == sq {
                         return true;
                     }
                 } else {
-                    if col(i) != 0 && (i as i32) + 7 == sq {
+                    if col(i) != 0 && (i as Int) + 7 == sq {
                         return true;
                     }
-                    if col(i) != 7 && (i as i32) + 9 == sq {
+                    if col(i) != 7 && (i as Int) + 9 == sq {
                         return true;
                     }
                 }
             } else {
                 for j in 0..(OFFSETS[PIECE[i] as usize] as usize) {
-                    let mut n = i as i32;
+                    let mut n = i as Int;
                     loop {
                         let m64 = MAILBOX64[n as usize] as usize;
                         let offset = OFFSET[PIECE[i] as usize][j] as usize;

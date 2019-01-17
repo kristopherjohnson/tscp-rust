@@ -10,46 +10,46 @@ use crate::defs::{Gen, Hist, Move, GEN_STACK, HIST_STACK, MAX_PLY};
 // the board representation
 
 // LIGHT, DARK, or EMPTY
-static mut COLOR: [i32; 64] = [0; 64];
+pub static mut COLOR: [i32; 64] = [0; 64];
 
 // PAWN, KNIGHT, BISHOP, ROOK, QUEEN, KING, or EMPTY
-static mut PIECE: [i32; 64] = [0; 64];
+pub static mut PIECE: [i32; 64] = [0; 64];
 
 // the side to move
-static mut SIDE: i32 = 0;
+pub static mut SIDE: i32 = 0;
 
 // the side not to move
-static mut XSIDE: i32 = 0;
+pub static mut XSIDE: i32 = 0;
 
 // a bitfield with the castle permissions. if 1 is set, white can still castle
 // kingside. 2 is white queenside.  4 is black kingside. 8 is black queenside.
-static mut CASTLE: i32 = 0;
+pub static mut CASTLE: i32 = 0;
 
 // the en passant square. if white moves e2e4, the en passant square is set to
 // e3, because that's where a pawn would move in an en passant capture
-static mut EP: i32 = 0;
+pub static mut EP: i32 = 0;
 
 // the number of moves since a capture or pawn move, used to handle the
 // fifty-move-draw rule
-static mut FIFTY: i32 = 0;
+pub static mut FIFTY: i32 = 0;
 
 // a (more or less) unique number that corresponds to the position
 static mut HASH: i32 = 0;
 
 // the number of half-moves (ply) since the root of the search tree
-static mut PLY: i32 = 0;
+pub static mut PLY: i32 = 0;
 
 // h for history; the number of ply since the beginning of the game
-static mut HPLY: i32 = 0;
+pub static mut HPLY: i32 = 0;
 
 // GEN_DAT is some memory for move lists that are created by the move
-// generators. The move list for ply n starts at first_move[n] and ends at
-// first_move[n + 1].
+// generators. The move list for ply n starts at FIRST_MOVE[n] and ends at
+// FIRST_MOVE[n + 1].
 static mut GEN_DAT: [Gen; GEN_STACK] = [Gen {
     m: Move { u: 0 },
     score: 0,
 }; GEN_STACK];
-static mut FIRST_MOVE: [i32; MAX_PLY] = [0; MAX_PLY];
+pub static mut FIRST_MOVE: [i32; MAX_PLY] = [0; MAX_PLY];
 
 // the history heuristic array (used for move ordering)
 static mut HISTORY: [[i32; 64]; 64] = [[0; 64]; 64];
@@ -170,7 +170,7 @@ const PIECE_CHAR: [char; 6] = ['P', 'N', 'B', 'R', 'Q', 'K'];
 // the initial board state
 
 #[rustfmt::skip]
-const INIT_COLOR: [i32; 64] = [
+pub const INIT_COLOR: [i32; 64] = [
     1, 1, 1, 1, 1, 1, 1, 1,
     1, 1, 1, 1, 1, 1, 1, 1,
     6, 6, 6, 6, 6, 6, 6, 6,
@@ -182,7 +182,7 @@ const INIT_COLOR: [i32; 64] = [
 ];
 
 #[rustfmt::skip]
-const INIT_PIECE: [i32; 64] = [
+pub const INIT_PIECE: [i32; 64] = [
     3, 1, 2, 4, 5, 2, 1, 3,
     0, 0, 0, 0, 0, 0, 0, 0,
     6, 6, 6, 6, 6, 6, 6, 6,

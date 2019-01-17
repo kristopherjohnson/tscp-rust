@@ -1,7 +1,7 @@
 [package]
 name = "tscp"
 version = "0.1.0"
-authors = ["Kristopher Johnson <kris@kristopherjohnson.net>"]
+authors = ["Tom Kerrigan <tom.kerrigan@gmail.com>", "Kristopher Johnson <kris@kristopherjohnson.net>"]
 edition = "2018"
 
 [dependencies]

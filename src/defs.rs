@@ -40,13 +40,6 @@ pub const F8: Int = 5;
 pub const G8: Int = 6;
 pub const H8: Int = 7;
 
-pub fn row(square: usize) -> Int {
-    (square >> 3) as Int
-}
-pub fn col(square: usize) -> Int {
-    (square & 7) as Int
-}
-
 /// This is the basic description of a move. promote is what
 /// piece to promote the pawn to, if the move is a pawn
 /// promotion. bits is a bitfield that describes the move,

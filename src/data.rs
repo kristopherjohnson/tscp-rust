@@ -7,6 +7,12 @@
 
 use crate::defs::{Gen, Hist, Int, Move, GEN_STACK, HIST_STACK, MAX_PLY};
 
+// #rust: The members of this module correspond to global variables in the
+// original C code.  In Rust, we usually avoid static mutable variables because
+// any use of them is "unsafe".  So as this port evolves, the data members
+// should be encapsulated in structs that are passed around to the functions
+// that operate on them.
+
 // the board representation
 
 /// LIGHT, DARK, or EMPTY

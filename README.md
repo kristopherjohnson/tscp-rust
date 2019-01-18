@@ -22,7 +22,9 @@ tools are installed, you can build the program by running this command:
 
     cargo build
 
-This will build the `tscp` executable in the `target/debug` directory.
+This will build the `tscp` executable in the `target/debug` directory.  (For a
+non-debug build, run `cargo build --release` and the executable will be in the
+`target/release` directory.)
 
 To build and run the program in a single step, run this command:
 
@@ -50,7 +52,6 @@ contact me:
 I hope you find TSCP useful!
 -Tom
 
-
 ## LEGAL STUFF
 
 According to copyright law, you are not allowed to distribute copies of TSCP
@@ -63,7 +64,6 @@ acting illegally.
 
 For more information about copyrights, visit this web page:
 http://lcweb.loc.gov/copyright/
-
 
 ## THANKS
 
@@ -185,3 +185,26 @@ Version 1.4, 12/6/99
 * Added whitespace in the source code to make it more readable. "x=2;" is now "x = 2;", etc.
 * Made a small number of minor (mostly aesthetic) changes to the algorithms.
 * Added copyright notices to the beginning of each source file and the text that TSCP prints when you run it.
+
+## RUST PORT
+
+The original C code was translated to Rust by Kristopher Johnson. The
+translation is a derived work, and copyright belongs to Tom Kerrigan.
+
+In general, the C code has been translated into Rust in the most straightforward
+way.  The module structure, identifier names, and logic of the Rust code are the
+same as those in the original C code, without any re-design to be more idiomatic
+as Rust.  So, this source code is primarily useful for people who want to learn
+about chess programming, and not for people who want to learn how to design Rust
+programs.
+
+Rust-specific comments start with the tag `#rust`.  All other comments are
+copied from Tom Kerrigan's original C code, with minor edits as needed to match
+the Rust translation.
+
+These stylistic rules have been applied during the translation:
+
+- The Rust code follows the naming conventions specified in [RFC #430](https://github.com/rust-lang/rfcs/blob/master/text/0430-finalizing-naming-conventions.md).  Static variables are in `SCREAMING_SNAKE_CASE` and type names are in `UpperCamelCase`.  So, for example, the C global variable `gen_dat` has been renamed `GEN_DAT` in the Rust code, and the C `struct move_bytes` type has been renamed `struct MoveBytes` in Rust.
+- Comments have been reformatted as Rust-style comments.
+- The `rustfmt` tool is used to automatically reformat Rust code in a consistent style.
+- This README file was converted from plain ASCII text to Markdown format, for easier reading on GitHub.

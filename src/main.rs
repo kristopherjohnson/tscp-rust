@@ -9,6 +9,7 @@
 #![allow(dead_code)]
 #![allow(unused_variables)]
 #![allow(unused_mut)]
+#![allow(unused_macros)]
 
 extern crate libc;
 
@@ -16,7 +17,7 @@ mod board;
 mod data;
 mod defs;
 
-use crate::board::{init_board, init_hash};
+use crate::board::{gen, init_board, init_hash};
 use crate::data::{MAX_DEPTH, MAX_TIME};
 use crate::defs::EMPTY;
 
@@ -40,7 +41,7 @@ fn main() {
         init_hash();
         init_board();
         // open_book();
-        // gen();
+        gen();
         let mut computer_side = EMPTY;
         MAX_TIME = 1 << 25;
         MAX_DEPTH = 4;

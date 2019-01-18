@@ -24,12 +24,8 @@ macro_rules! gen_push {
 
 /// init_board() sets the board to the initial game state.
 pub unsafe fn init_board() {
-    // #rust TODO: Can we just copy these arrays rather than copying
-    // element-by-element?
-    for i in 0..COLOR.len() {
-        COLOR[i] = INIT_COLOR[i];
-        PIECE[i] = INIT_PIECE[i];
-    }
+    COLOR.copy_from_slice(&INIT_COLOR);
+    PIECE.copy_from_slice(&INIT_PIECE);
     SIDE = LIGHT;
     XSIDE = DARK;
     CASTLE = 15;

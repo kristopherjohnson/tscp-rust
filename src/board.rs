@@ -23,7 +23,7 @@ macro_rules! gen_push {
 pub unsafe fn init_board() {
     // #rust TODO: Can we just copy these arrays rather than copying
     // element-by-element?
-    for i in 0..64 {
+    for i in 0..COLOR.len() {
         COLOR[i] = INIT_COLOR[i];
         PIECE[i] = INIT_PIECE[i];
     }
@@ -50,7 +50,7 @@ pub unsafe fn init_hash() {
         }
     }
     HASH_SIDE = hash_rand();
-    for i in 0..64 {
+    for i in 0..HASH_EP.len() {
         HASH_EP[i] = hash_rand();
     }
 }
@@ -80,7 +80,7 @@ unsafe fn hash_rand() -> Int {
 
 unsafe fn set_hash() {
     HASH = 0;
-    for i in 0..64 {
+    for i in 0..COLOR.len() {
         if COLOR[i] != EMPTY {
             HASH ^= HASH_PIECE[COLOR[i] as usize][PIECE[i] as usize][i as usize];
         }
@@ -98,7 +98,7 @@ unsafe fn set_hash() {
 /// being attacked.
 
 unsafe fn in_check(s: Int) -> bool {
-    for i in 0..64 {
+    for i in 0..PIECE.len() {
         if PIECE[i] == KING && COLOR[i] == s {
             return attack(i as Int, s ^ 1);
         }
@@ -110,7 +110,7 @@ unsafe fn in_check(s: Int) -> bool {
 /// otherwise.
 
 unsafe fn attack(sq: Int, s: Int) -> bool {
-    for i in 0..64 {
+    for i in 0..COLOR.len() {
         if COLOR[i] == s {
             if PIECE[i] == PAWN {
                 if s == LIGHT {
@@ -164,7 +164,7 @@ pub unsafe fn gen() {
     // so far, we have no moves for the current ply
     FIRST_MOVE[PLY + 1] = FIRST_MOVE[PLY];
 
-    for i in 0..64 {
+    for i in 0..COLOR.len() {
         if COLOR[i] == SIDE {
             if PIECE[i] == PAWN {
                 if SIDE == LIGHT {

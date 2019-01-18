@@ -6,16 +6,19 @@
 // Rust port by Kristopher Johnson
 
 use crate::data::{
-    CASTLE, COLOR, EP, FIFTY, FIRST_MOVE, HASH, HASH_EP, HASH_PIECE, HASH_SIDE, HPLY, INIT_COLOR,
-    INIT_PIECE, MAILBOX, MAILBOX64, OFFSET, OFFSETS, PIECE, PLY, SIDE, SLIDE, XSIDE,
+    CASTLE, COLOR, EP, FIFTY, FIRST_MOVE, GEN_DAT, HASH, HASH_EP, HASH_PIECE, HASH_SIDE, HPLY,
+    INIT_COLOR, INIT_PIECE, MAILBOX, MAILBOX64, OFFSET, OFFSETS, PIECE, PLY, SIDE, SLIDE, XSIDE,
 };
-use crate::defs::{Int, C1, C8, DARK, E1, E8, EMPTY, G1, G8, KING, LIGHT, PAWN};
+use crate::defs::{
+    Int, A1, C1, C8, DARK, E1, E8, EMPTY, G1, G8, H8, KING, KNIGHT, LIGHT, PAWN, QUEEN,
+};
 
-// #rust gen_push!(from, to, bits) coerces the arguments to u8, avoiding the
-// need for a lot of explicit "as u8" coercions in calls of gen_push().
+// #rust gen_push!(from, to, bits) coerces the arguments to the right types,
+// avoiding the need for a lot of explicit "as usize" and "as u8" coercions in
+// calls to gen_push().
 macro_rules! gen_push {
     ( $from:expr, $to:expr, $bits:expr ) => {
-        gen_push($from as u8, $to as u8, $bits as u8)
+        gen_push($from as usize, $to as usize, $bits as u8)
     };
 }
 
@@ -261,6 +264,128 @@ pub unsafe fn gen() {
     }
 }
 
-unsafe fn gen_push(from: u8, to: u8, bits: u8) {
-    // #rust TODO
+/// gen_caps() is basically a copy of gen() that's modified to only generate
+/// capture and promote moves. It's used by the quiescence search.
+
+unsafe fn gen_caps() {
+    FIRST_MOVE[PLY + 1] = FIRST_MOVE[PLY];
+    for i in 0..COLOR.len() {
+        if COLOR[i] == SIDE {
+            if PIECE[i] == PAWN {
+                if SIDE == LIGHT {
+                    if col!(i) != 0 && COLOR[i - 9] == DARK {
+                        gen_push!(i, i - 9, 17);
+                    }
+                    if col!(i) != 7 && COLOR[i - 7] == DARK {
+                        gen_push!(i, i - 7, 17);
+                    }
+                    if i <= 15 && COLOR[i - 8] == EMPTY {
+                        gen_push!(i, i - 8, 16);
+                    }
+                }
+                if SIDE == DARK {
+                    if col!(i) != 0 && COLOR[i + 7] == LIGHT {
+                        gen_push!(i, i + 7, 17);
+                    }
+                    if col!(i) != 7 && COLOR[i + 9] == LIGHT {
+                        gen_push!(i, i + 9, 17);
+                    }
+                    if i >= 48 && COLOR[i + 8] == EMPTY {
+                        gen_push!(i, i + 8, 16);
+                    }
+                }
+            } else {
+                for j in 0..(OFFSETS[PIECE[i] as usize] as usize) {
+                    let mut n = i as i32;
+                    loop {
+                        let m64 = MAILBOX64[n as usize];
+                        let offset = OFFSET[PIECE[i] as usize][j];
+                        n = MAILBOX[(m64 + offset) as usize];
+                        if n == -1 {
+                            break;
+                        }
+                        let color = COLOR[n as usize];
+                        if color != EMPTY {
+                            if color == XSIDE {
+                                gen_push!(i, n, 1);
+                            }
+                            break;
+                        }
+                        gen_push!(i, n, 0);
+                        if !SLIDE[PIECE[i] as usize] {
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    if EP != -1 {
+        // #rust TODO Maybe there is a better way to avoid a bunch of "as usize"
+        // casts in the expressions below.
+        let i_ep = EP as usize;
+        if SIDE == LIGHT {
+            if col!(EP) != 0 && COLOR[i_ep + 7] == LIGHT && PIECE[i_ep + 7] == PAWN {
+                gen_push!(EP + 7, EP, 21);
+            }
+            if col!(EP) != 7 && COLOR[i_ep + 9] == LIGHT && PIECE[i_ep + 9] == PAWN {
+                gen_push!(EP + 9, EP, 21);
+            }
+        } else {
+            if col!(EP) != 0 && COLOR[i_ep - 9] == DARK && PIECE[i_ep - 9] == PAWN {
+                gen_push!(EP - 9, EP, 21);
+            }
+            if col!(EP) != 7 && COLOR[i_ep - 7] == DARK && PIECE[i_ep - 7] == PAWN {
+                gen_push!(EP - 7, EP, 21);
+            }
+        }
+    }
+}
+
+/// gen_push() puts a move on the move stack, unless it's a pawn promotion that
+/// needs to be handled by gen_promote().  It also assigns a score to the move
+/// for alpha-beta move ordering. If the move is a capture, it uses MVV/LVA
+/// (Most Valuable Victim/Least Valuable Attacker). Otherwise, it uses the
+/// move's history heuristic value. Note that 1,000,000 is added to a capture
+/// move's score, so it always gets ordered above a "normal" move. */
+
+unsafe fn gen_push(from: usize, to: usize, bits: u8) {
+    if (bits & 16) != 0 {
+        if SIDE == LIGHT {
+            if to <= H8 {
+                gen_promote(from, to, bits);
+                return;
+            }
+        } else {
+            if to >= A1 {
+                gen_promote(from, to, bits);
+                return;
+            }
+        }
+    }
+    let g = &mut GEN_DAT[FIRST_MOVE[PLY + 1] as usize];
+    FIRST_MOVE[PLY + 1] += 1;
+    g.m.b.from = from as u8;
+    g.m.b.to = to as u8;
+    g.m.b.promote = 0;
+    g.m.b.bits = bits;
+    if COLOR[to] != EMPTY {
+        g.score = 1000000 + PIECE[to] * 10 - PIECE[from];
+    }
+}
+
+/// gen_promote() is just like gen_push(), only it puts 4 moves on the move
+/// stack, one for each possible promotion piece
+
+unsafe fn gen_promote(from: usize, to: usize, bits: u8) {
+    for i in KNIGHT..=QUEEN {
+        let g = &mut GEN_DAT[FIRST_MOVE[PLY + 1] as usize];
+        FIRST_MOVE[PLY + 1] += 1;
+        g.m.b.from = from as u8;
+        g.m.b.to = to as u8;
+        g.m.b.promote = i as u8;
+        g.m.b.bits = bits | 32;
+        g.score = 1000000 + (i * 10);
+    }
 }

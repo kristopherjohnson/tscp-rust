@@ -24,21 +24,21 @@ pub const KING: Int = 5;
 pub const EMPTY: Int = 6;
 
 // useful squares
-pub const A1: Int = 56;
-pub const B1: Int = 57;
-pub const C1: Int = 58;
-pub const D1: Int = 59;
-pub const E1: Int = 60;
-pub const F1: Int = 61;
-pub const G1: Int = 62;
-pub const A8: Int = 0;
-pub const B8: Int = 1;
-pub const C8: Int = 2;
-pub const D8: Int = 3;
-pub const E8: Int = 4;
-pub const F8: Int = 5;
-pub const G8: Int = 6;
-pub const H8: Int = 7;
+pub const A1: usize = 56;
+pub const B1: usize = 57;
+pub const C1: usize = 58;
+pub const D1: usize = 59;
+pub const E1: usize = 60;
+pub const F1: usize = 61;
+pub const G1: usize = 62;
+pub const A8: usize = 0;
+pub const B8: usize = 1;
+pub const C8: usize = 2;
+pub const D8: usize = 3;
+pub const E8: usize = 4;
+pub const F8: usize = 5;
+pub const G8: usize = 6;
+pub const H8: usize = 7;
 
 macro_rules! row {
     ( $x:expr ) => {

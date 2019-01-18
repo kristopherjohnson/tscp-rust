@@ -51,7 +51,7 @@ pub static mut HPLY: usize = 0;
 /// GEN_DAT is some memory for move lists that are created by the move
 /// generators. The move list for ply n starts at FIRST_MOVE[n] and ends at
 /// FIRST_MOVE[n + 1].
-static mut GEN_DAT: [Gen; GEN_STACK] = [Gen {
+pub static mut GEN_DAT: [Gen; GEN_STACK] = [Gen {
     m: Move { u: 0 },
     score: 0,
 }; GEN_STACK];

@@ -43,10 +43,10 @@ pub static mut FIFTY: Int = 0;
 pub static mut HASH: Int = 0;
 
 /// the number of half-moves (ply) since the root of the search tree
-pub static mut PLY: Int = 0;
+pub static mut PLY: usize = 0;
 
 /// h for history; the number of ply since the beginning of the game
-pub static mut HPLY: Int = 0;
+pub static mut HPLY: usize = 0;
 
 /// GEN_DAT is some memory for move lists that are created by the move
 /// generators. The move list for ply n starts at FIRST_MOVE[n] and ends at

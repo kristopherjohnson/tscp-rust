@@ -5,7 +5,7 @@
 //
 // Rust port by Kristopher Johnson
 
-// #rust Remove these when we finish translating all modules.
+// #rust Re-enable these warnings when we finish translating all modules.
 #![allow(dead_code)]
 #![allow(unused_variables)]
 #![allow(unused_mut)]
@@ -13,9 +13,11 @@
 
 extern crate libc;
 
+#[macro_use]
+mod defs;
+
 mod board;
 mod data;
-mod defs;
 
 use crate::board::{gen, init_board, init_hash};
 use crate::data::{MAX_DEPTH, MAX_TIME};

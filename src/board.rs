@@ -11,21 +11,8 @@ use crate::data::{
 };
 use crate::defs::{Int, C1, C8, DARK, E1, E8, EMPTY, G1, G8, KING, LIGHT, PAWN};
 
-// #rust TODO The row! and col! macros should go into the defs module, but I
-// can't figure out how to make that work.
-macro_rules! row {
-    ( $x:expr ) => {
-        $x >> 3
-    };
-}
-macro_rules! col {
-    ( $x:expr ) => {
-        $x & 7
-    };
-}
-
-// #rust gen_push!(from, to, bits) downcasts the arguments to u8, avoiding the
-// need for a lot of explicit "as u8" expressions in calls of gen_push().
+// #rust gen_push!(from, to, bits) coerces the arguments to u8, avoiding the
+// need for a lot of explicit "as u8" coercions in calls of gen_push().
 macro_rules! gen_push {
     ( $from:expr, $to:expr, $bits:expr ) => {
         gen_push($from as u8, $to as u8, $bits as u8)
@@ -119,7 +106,7 @@ unsafe fn in_check(s: Int) -> bool {
     std::panic!("in_check: shouldn't get here");
 }
 
-/// attack() returns TRUE if square sq is being attacked by side s and FALSE
+/// attack() returns true if square sq is being attacked by side s and false
 /// otherwise.
 
 unsafe fn attack(sq: Int, s: Int) -> bool {
@@ -175,7 +162,7 @@ unsafe fn attack(sq: Int, s: Int) -> bool {
 
 pub unsafe fn gen() {
     // so far, we have no moves for the current ply
-    FIRST_MOVE[PLY as usize + 1] = FIRST_MOVE[PLY as usize];
+    FIRST_MOVE[PLY + 1] = FIRST_MOVE[PLY];
 
     for i in 0..64 {
         if COLOR[i] == SIDE {

@@ -40,6 +40,18 @@ pub const F8: Int = 5;
 pub const G8: Int = 6;
 pub const H8: Int = 7;
 
+macro_rules! row {
+    ( $x:expr ) => {
+        $x >> 3
+    };
+}
+
+macro_rules! col {
+    ( $x:expr ) => {
+        $x & 7
+    };
+}
+
 /// This is the basic description of a move. promote is what
 /// piece to promote the pawn to, if the move is a pawn
 /// promotion. bits is a bitfield that describes the move,

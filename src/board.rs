@@ -99,7 +99,7 @@ unsafe fn set_hash() {
 unsafe fn in_check(s: Int) -> bool {
     for i in 0..PIECE.len() {
         if PIECE[i] == KING && COLOR[i] == s {
-            return attack(i as Int, s ^ 1);
+            return attack(i, s ^ 1);
         }
     }
     std::panic!("in_check: shouldn't get here");
@@ -108,22 +108,22 @@ unsafe fn in_check(s: Int) -> bool {
 /// attack() returns true if square sq is being attacked by side s and false
 /// otherwise.
 
-unsafe fn attack(sq: Int, s: Int) -> bool {
+unsafe fn attack(sq: usize, s: Int) -> bool {
     for i in 0..COLOR.len() {
         if COLOR[i] == s {
             if PIECE[i] == PAWN {
                 if s == LIGHT {
-                    if col!(i) != 0 && (i as Int) - 9 == sq {
+                    if col!(i) != 0 && i - 9 == sq {
                         return true;
                     }
-                    if col!(i) != 7 && (i as Int) - 7 == sq {
+                    if col!(i) != 7 && i - 7 == sq {
                         return true;
                     }
                 } else {
-                    if col!(i) != 0 && (i as Int) + 7 == sq {
+                    if col!(i) != 0 && i + 7 == sq {
                         return true;
                     }
-                    if col!(i) != 7 && (i as Int) + 9 == sq {
+                    if col!(i) != 7 && i + 9 == sq {
                         return true;
                     }
                 }
@@ -137,7 +137,7 @@ unsafe fn attack(sq: Int, s: Int) -> bool {
                         if n == -1 {
                             break;
                         }
-                        if n == sq {
+                        if n as usize == sq {
                             return true;
                         }
                         if COLOR[n as usize] != EMPTY {

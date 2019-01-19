@@ -61,7 +61,7 @@ pub static mut FIRST_MOVE: [Int; MAX_PLY] = [0; MAX_PLY];
 static mut HISTORY: [[Int; 64]; 64] = [[0; 64]; 64];
 
 /// we need an array of hist_t's so we can take back the moves we make
-static mut HIST_DAT: [Hist; HIST_STACK] = [Hist {
+pub static mut HIST_DAT: [Hist; HIST_STACK] = [Hist {
     m: Move { u: 0 },
     capture: 0,
     castle: 0,
@@ -159,7 +159,7 @@ pub const OFFSET: [[Int; 8]; 6] = [
 /// 1&14, and CASTLE becomes 0 and white can't castle kingside anymore.
 
 #[rustfmt::skip]
-const CASTLE_MASK: [Int; 64] = [
+pub const CASTLE_MASK: [Int; 64] = [
      7, 15, 15, 15,  3, 15, 15, 11,
     15, 15, 15, 15, 15, 15, 15, 15,
     15, 15, 15, 15, 15, 15, 15, 15,

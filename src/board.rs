@@ -6,11 +6,13 @@
 // Rust port by Kristopher Johnson
 
 use crate::data::{
-    CASTLE, COLOR, EP, FIFTY, FIRST_MOVE, GEN_DAT, HASH, HASH_EP, HASH_PIECE, HASH_SIDE, HPLY,
-    INIT_COLOR, INIT_PIECE, MAILBOX, MAILBOX64, OFFSET, OFFSETS, PIECE, PLY, SIDE, SLIDE, XSIDE,
+    CASTLE, CASTLE_MASK, COLOR, EP, FIFTY, FIRST_MOVE, GEN_DAT, HASH, HASH_EP, HASH_PIECE,
+    HASH_SIDE, HIST_DAT, HPLY, INIT_COLOR, INIT_PIECE, MAILBOX, MAILBOX64, OFFSET, OFFSETS, PIECE,
+    PLY, SIDE, SLIDE, XSIDE,
 };
 use crate::defs::{
-    Int, A1, C1, C8, DARK, E1, E8, EMPTY, G1, G8, H8, KING, KNIGHT, LIGHT, PAWN, QUEEN,
+    Int, MoveBytes, A1, A8, B1, B8, C1, C8, D1, D8, DARK, E1, E8, EMPTY, F1, F8, G1, G8, H1, H8,
+    KING, KNIGHT, LIGHT, PAWN, QUEEN, ROOK,
 };
 
 // #rust gen_push!(from, to, bits) coerces the arguments to the right types,
@@ -383,5 +385,191 @@ unsafe fn gen_promote(from: usize, to: usize, bits: u8) {
         g.m.b.promote = i as u8;
         g.m.b.bits = bits | 32;
         g.score = 1000000 + (i * 10);
+    }
+}
+
+/// makemove() makes a move. If the move is illegal, it
+/// undoes whatever it did and returns FALSE. Otherwise, it
+/// returns TRUE.
+
+unsafe fn makemove(m: MoveBytes) -> bool {
+    let mut from: usize;
+    let mut to: usize;
+
+    // test to see if a castle move is legal and move the rook (the king is
+    // moved with the usual move code later)
+    if (m.bits & 2) != 0 {
+        if in_check(SIDE) {
+            return false;
+        }
+        match m.to as usize {
+            G1 => {
+                if COLOR[F1] != EMPTY
+                    || COLOR[G1] != EMPTY
+                    || attack(F1, XSIDE)
+                    || attack(G1, XSIDE)
+                {
+                    return false;
+                }
+                from = H1;
+                to = F1;
+            }
+            C1 => {
+                if COLOR[B1] != EMPTY
+                    || COLOR[C1] != EMPTY
+                    || COLOR[D1] != EMPTY
+                    || attack(C1, XSIDE)
+                    || attack(D1, XSIDE)
+                {
+                    return false;
+                }
+                from = A1;
+                to = D1;
+            }
+            G8 => {
+                if COLOR[F8] != EMPTY
+                    || COLOR[G8] != EMPTY
+                    || attack(F8, XSIDE)
+                    || attack(G8, XSIDE)
+                {
+                    return false;
+                }
+                from = H8;
+                to = F8;
+            }
+            C8 => {
+                if COLOR[B8] != EMPTY
+                    || COLOR[C8] != EMPTY
+                    || COLOR[D8] != EMPTY
+                    || attack(C8, XSIDE)
+                    || attack(D8, XSIDE)
+                {
+                    return false;
+                }
+                from = A8;
+                to = D8;
+            }
+            _ => {
+                panic!("makemove: invalid castling move");
+            }
+        }
+        COLOR[to] = COLOR[from];
+        PIECE[to] = PIECE[from];
+        COLOR[from] = EMPTY;
+        PIECE[from] = EMPTY;
+    }
+
+    // back up information so we can take the move back later.
+    HIST_DAT[HPLY].m.b = m;
+    HIST_DAT[HPLY].capture = PIECE[m.to as usize];
+    HIST_DAT[HPLY].castle = CASTLE;
+    HIST_DAT[HPLY].ep = EP;
+    HIST_DAT[HPLY].fifty = FIFTY;
+    HIST_DAT[HPLY].hash = HASH;
+    PLY += 1;
+    HPLY += 1;
+
+    // update the castle, en passant, and fifty-move-draw variables
+    CASTLE &= CASTLE_MASK[m.from as usize] & CASTLE_MASK[m.to as usize];
+    if (m.bits & 8) != 0 {
+        if SIDE == LIGHT {
+            EP = m.to as Int + 8;
+        } else {
+            EP = m.to as Int - 8;
+        }
+    } else {
+        EP = -1;
+    }
+    if (m.bits & 17) != 0 {
+        FIFTY = 0;
+    } else {
+        FIFTY += 1;
+    }
+
+    // move the piece
+    COLOR[m.to as usize] = SIDE;
+    if (m.bits & 32) != 0 {
+        PIECE[m.to as usize] = m.promote as Int;
+    } else {
+        PIECE[m.to as usize] = PIECE[m.from as usize];
+    }
+    COLOR[m.from as usize] = EMPTY;
+    PIECE[m.from as usize] = EMPTY;
+
+    // erase the pawn if this is an en passant move
+    if (m.bits & 4) != 0 {
+        let pawn_sq = if SIDE == LIGHT { m.to + 8 } else { m.to - 8 } as usize;
+        COLOR[pawn_sq] = EMPTY;
+        PIECE[pawn_sq] = EMPTY;
+    }
+
+    // switch sides and test for legality (if we can capture the other guy's
+    // king, it's an illegal position and we need to take the move back)
+    SIDE ^= 1;
+    XSIDE ^= 1;
+    if in_check(XSIDE) {
+        takeback();
+        return false;
+    }
+    set_hash();
+    true
+}
+
+/// takeback() is very similar to makemove(), only backwards :)
+
+unsafe fn takeback() {
+    SIDE ^= 1;
+    XSIDE ^= 1;
+    PLY -= 1;
+    HPLY -= 1;
+    let m = HIST_DAT[HPLY].m.b;
+    CASTLE = HIST_DAT[HPLY].castle;
+    EP = HIST_DAT[HPLY].ep;
+    FIFTY = HIST_DAT[HPLY].fifty;
+    HASH = HIST_DAT[HPLY].hash;
+    COLOR[m.from as usize] = SIDE;
+    if (m.bits & 32) != 0 {
+        PIECE[m.from as usize] = PAWN;
+    } else {
+        PIECE[m.from as usize] = PIECE[m.to as usize];
+    }
+    if HIST_DAT[HPLY].capture == EMPTY {
+        COLOR[m.to as usize] = EMPTY;
+        PIECE[m.to as usize] = EMPTY;
+    } else {
+        COLOR[m.to as usize] = XSIDE;
+        PIECE[m.to as usize] = HIST_DAT[HPLY].capture;
+    }
+    if (m.bits & 2) != 0 {
+        let from: usize;
+        let to: usize;
+        match m.to as usize {
+            G1 => {
+                from = F1;
+                to = H1;
+            }
+            C1 => {
+                from = D1;
+                to = A1;
+            }
+            G8 => {
+                from = F8;
+                to = H8;
+            }
+            C8 => {
+                from = D8;
+                to = A8;
+            }
+            _ => panic!("takeback: invalid castling move"),
+        }
+        COLOR[to] = SIDE;
+        PIECE[to] = ROOK;
+        COLOR[from] = EMPTY;
+        PIECE[from] = EMPTY;
+    }
+    if (m.bits & 4) != 0 {
+        let pawn_sq = if SIDE == LIGHT { m.to + 8 } else { m.to - 8 } as usize;
+        COLOR[pawn_sq] = XSIDE;
+        PIECE[pawn_sq] = PAWN;
     }
 }

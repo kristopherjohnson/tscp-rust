@@ -31,6 +31,7 @@ pub const D1: usize = 59;
 pub const E1: usize = 60;
 pub const F1: usize = 61;
 pub const G1: usize = 62;
+pub const H1: usize = 63;
 pub const A8: usize = 0;
 pub const B8: usize = 1;
 pub const C8: usize = 2;

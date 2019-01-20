@@ -18,6 +18,7 @@ mod defs;
 
 mod board;
 mod data;
+mod eval;
 
 use crate::board::{gen, init_board, init_hash};
 use crate::data::{MAX_DEPTH, MAX_TIME};

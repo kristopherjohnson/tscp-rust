@@ -6,13 +6,13 @@
 // Rust port by Kristopher Johnson
 
 use crate::data::{
-    CASTLE, CASTLE_MASK, COLOR, EP, FIFTY, FIRST_MOVE, GEN_DAT, HASH, HASH_EP, HASH_PIECE,
-    HASH_SIDE, HIST_DAT, HPLY, INIT_COLOR, INIT_PIECE, MAILBOX, MAILBOX64, OFFSET, OFFSETS, PIECE,
-    PLY, SIDE, SLIDE, XSIDE,
+    CASTLE, CASTLE_MASK, COLOR, EP, FIFTY, FIRST_MOVE, GEN_DAT, HASH, HASH_EP,
+    HASH_PIECE, HASH_SIDE, HIST_DAT, HPLY, INIT_COLOR, INIT_PIECE, MAILBOX,
+    MAILBOX64, OFFSET, OFFSETS, PIECE, PLY, SIDE, SLIDE, XSIDE,
 };
 use crate::defs::{
-    Int, MoveBytes, A1, A8, B1, B8, C1, C8, D1, D8, DARK, E1, E8, EMPTY, F1, F8, G1, G8, H1, H8,
-    KING, KNIGHT, LIGHT, PAWN, QUEEN, ROOK,
+    Int, MoveBytes, A1, A8, B1, B8, C1, C8, D1, D8, DARK, E1, E8, EMPTY, F1,
+    F8, G1, G8, H1, H8, KING, KNIGHT, LIGHT, PAWN, QUEEN, ROOK,
 };
 
 // #rust gen_push!(from, to, bits) coerces the arguments to the right types,
@@ -83,7 +83,8 @@ unsafe fn set_hash() {
     HASH = 0;
     for i in 0..COLOR.len() {
         if COLOR[i] != EMPTY {
-            HASH ^= HASH_PIECE[COLOR[i] as usize][PIECE[i] as usize][i as usize];
+            HASH ^=
+                HASH_PIECE[COLOR[i] as usize][PIECE[i] as usize][i as usize];
         }
     }
     if SIDE == DARK {
@@ -104,7 +105,7 @@ unsafe fn in_check(s: Int) -> bool {
             return attack(i, s ^ 1);
         }
     }
-    std::panic!("in_check: shouldn't get here");
+    panic!("in_check: shouldn't get here");
 }
 
 /// attack() returns true if square sq is being attacked by side s and false
@@ -245,17 +246,29 @@ pub unsafe fn gen() {
         // casts in the expressions below.
         let i_ep = EP as usize;
         if SIDE == LIGHT {
-            if col!(EP) != 0 && COLOR[i_ep + 7] == LIGHT && PIECE[i_ep + 7] == PAWN {
+            if col!(EP) != 0
+                && COLOR[i_ep + 7] == LIGHT
+                && PIECE[i_ep + 7] == PAWN
+            {
                 gen_push!(EP + 7, EP, 21);
             }
-            if col!(EP) != 7 && COLOR[i_ep + 9] == LIGHT && PIECE[i_ep + 9] == PAWN {
+            if col!(EP) != 7
+                && COLOR[i_ep + 9] == LIGHT
+                && PIECE[i_ep + 9] == PAWN
+            {
                 gen_push!(EP + 9, EP, 21);
             }
         } else {
-            if col!(EP) != 0 && COLOR[i_ep - 9] == DARK && PIECE[i_ep - 9] == PAWN {
+            if col!(EP) != 0
+                && COLOR[i_ep - 9] == DARK
+                && PIECE[i_ep - 9] == PAWN
+            {
                 gen_push!(EP - 9, EP, 21);
             }
-            if col!(EP) != 7 && COLOR[i_ep - 7] == DARK && PIECE[i_ep - 7] == PAWN {
+            if col!(EP) != 7
+                && COLOR[i_ep - 7] == DARK
+                && PIECE[i_ep - 7] == PAWN
+            {
                 gen_push!(EP - 7, EP, 21);
             }
         }
@@ -324,17 +337,29 @@ unsafe fn gen_caps() {
         // casts in the expressions below.
         let i_ep = EP as usize;
         if SIDE == LIGHT {
-            if col!(EP) != 0 && COLOR[i_ep + 7] == LIGHT && PIECE[i_ep + 7] == PAWN {
+            if col!(EP) != 0
+                && COLOR[i_ep + 7] == LIGHT
+                && PIECE[i_ep + 7] == PAWN
+            {
                 gen_push!(EP + 7, EP, 21);
             }
-            if col!(EP) != 7 && COLOR[i_ep + 9] == LIGHT && PIECE[i_ep + 9] == PAWN {
+            if col!(EP) != 7
+                && COLOR[i_ep + 9] == LIGHT
+                && PIECE[i_ep + 9] == PAWN
+            {
                 gen_push!(EP + 9, EP, 21);
             }
         } else {
-            if col!(EP) != 0 && COLOR[i_ep - 9] == DARK && PIECE[i_ep - 9] == PAWN {
+            if col!(EP) != 0
+                && COLOR[i_ep - 9] == DARK
+                && PIECE[i_ep - 9] == PAWN
+            {
                 gen_push!(EP - 9, EP, 21);
             }
-            if col!(EP) != 7 && COLOR[i_ep - 7] == DARK && PIECE[i_ep - 7] == PAWN {
+            if col!(EP) != 7
+                && COLOR[i_ep - 7] == DARK
+                && PIECE[i_ep - 7] == PAWN
+            {
                 gen_push!(EP - 7, EP, 21);
             }
         }

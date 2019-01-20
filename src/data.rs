@@ -55,10 +55,10 @@ pub static mut GEN_DAT: [Gen; GEN_STACK] = [Gen {
     m: Move { u: 0 },
     score: 0,
 }; GEN_STACK];
-pub static mut FIRST_MOVE: [Int; MAX_PLY] = [0; MAX_PLY];
+pub static mut FIRST_MOVE: [usize; MAX_PLY] = [0; MAX_PLY];
 
 /// the history heuristic array (used for move ordering)
-static mut HISTORY: [[Int; 64]; 64] = [[0; 64]; 64];
+pub static mut HISTORY: [[Int; 64]; 64] = [[0; 64]; 64];
 
 /// we need an array of hist_t's so we can take back the moves we make
 pub static mut HIST_DAT: [Hist; HIST_STACK] = [Hist {
@@ -76,17 +76,18 @@ pub static mut MAX_TIME: Int = 0;
 pub static mut MAX_DEPTH: Int = 0;
 
 /// the time when the engine starts searching, and when it should stop
-static mut START_TIME: Int = 0;
-static mut STOP_TIME: Int = 0;
+pub static mut START_TIME: u128 = 0;
+pub static mut STOP_TIME: u128 = 0;
 
 /// the number of nodes we've searched
-static mut NODES: Int = 0;
+pub static mut NODES: Int = 0;
 
 /// a "triangular" PV array; for a good explanation of why a triangular array is
 /// needed, see "How Computers Play Chess" by Levy and Newborn.
-static mut PV: [[Move; MAX_PLY]; MAX_PLY] = [[Move { u: 0 }; MAX_PLY]; MAX_PLY];
-static mut PV_LENGTH: [Int; MAX_PLY] = [0; MAX_PLY];
-static mut FOLLOW_PV: bool = false;
+pub static mut PV: [[Move; MAX_PLY]; MAX_PLY] =
+    [[Move { u: 0 }; MAX_PLY]; MAX_PLY];
+pub static mut PV_LENGTH: [usize; MAX_PLY] = [0; MAX_PLY];
+pub static mut FOLLOW_PV: bool = false;
 
 /// random numbers used to compute hash; see set_hash() in board.rs.
 /// indexed by piece [color][type][square]

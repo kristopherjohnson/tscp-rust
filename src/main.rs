@@ -5,7 +5,7 @@
 //
 // Rust port by Kristopher Johnson
 
-// #rust Re-enable these warnings when we finish translating all modules.
+// #rust TODO Re-enable these warnings when we finish translating all modules.
 #![allow(dead_code)]
 #![allow(unused_variables)]
 #![allow(unused_mut)]
@@ -17,12 +17,25 @@ extern crate libc;
 mod defs;
 
 mod board;
+mod book;
 mod data;
 mod eval;
+mod search;
 
 use crate::board::{gen, init_board, init_hash};
 use crate::data::{MAX_DEPTH, MAX_TIME};
-use crate::defs::EMPTY;
+use crate::defs::{MoveBytes, EMPTY};
+
+use std::time::{SystemTime, UNIX_EPOCH};
+
+/// get_ms() returns the milliseconds elapsed since midnight, January 1, 1970
+
+fn get_ms() -> u128 {
+    let duration = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .expect("system time error");
+    duration.as_secs() as u128 * 1000 + duration.subsec_millis() as u128
+}
 
 fn main() {
     println!("");
@@ -53,4 +66,10 @@ fn main() {
         }
         // close_book()
     }
+}
+
+/// move_str returns a string with move m in coordinate notation
+
+fn move_str(m: MoveBytes) -> String {
+    "<move_str: TODO>".to_string()
 }

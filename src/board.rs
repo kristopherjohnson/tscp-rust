@@ -99,7 +99,7 @@ unsafe fn set_hash() {
 /// scans the board to find side s's king and calls attack() to see if it's
 /// being attacked.
 
-unsafe fn in_check(s: Int) -> bool {
+pub unsafe fn in_check(s: Int) -> bool {
     for i in 0..PIECE.len() {
         if PIECE[i] == KING && COLOR[i] == s {
             return attack(i, s ^ 1);
@@ -278,7 +278,7 @@ pub unsafe fn gen() {
 /// gen_caps() is basically a copy of gen() that's modified to only generate
 /// capture and promote moves. It's used by the quiescence search.
 
-unsafe fn gen_caps() {
+pub unsafe fn gen_caps() {
     FIRST_MOVE[PLY + 1] = FIRST_MOVE[PLY];
     for i in 0..COLOR.len() {
         if COLOR[i] == SIDE {
@@ -417,7 +417,7 @@ unsafe fn gen_promote(from: usize, to: usize, bits: u8) {
 /// undoes whatever it did and returns FALSE. Otherwise, it
 /// returns TRUE.
 
-unsafe fn makemove(m: MoveBytes) -> bool {
+pub unsafe fn makemove(m: MoveBytes) -> bool {
     let mut from: usize;
     let mut to: usize;
 
@@ -542,7 +542,7 @@ unsafe fn makemove(m: MoveBytes) -> bool {
 
 /// takeback() is very similar to makemove(), only backwards :)
 
-unsafe fn takeback() {
+pub unsafe fn takeback() {
     SIDE ^= 1;
     XSIDE ^= 1;
     PLY -= 1;

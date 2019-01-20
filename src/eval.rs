@@ -110,7 +110,7 @@ static mut PIECE_MAT: [Int; 2] = [0; 2];
 /// the value of a side's pawns
 static mut PAWN_MAT: [Int; 2] = [0; 2];
 
-unsafe fn eval() -> Int {
+pub unsafe fn eval() -> Int {
     let mut score = [0; 2];
 
     // this is the first pass: set up PAWN_RANK, PIECE_MAT, and PAWN_MAT

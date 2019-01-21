@@ -60,9 +60,14 @@ pub unsafe fn book_move() -> Int {
     let mut moves = 0;
     let mut total_count = 0;
 
-    if BOOK_LINES.is_none() || HPLY > 25 {
+    if HPLY > 25 {
         return -1;
     }
+
+    let book_lines = match &BOOK_LINES {
+        Some(lines) => { lines }
+        None => { return -1 }
+    };
 
     // line is a string with the current line, e.g., "e2e4 e7e5 g1f3 "
     let mut line = String::from("");
@@ -72,7 +77,7 @@ pub unsafe fn book_move() -> Int {
     }
 
     // compare line to each line in the opening book
-    for book_line in BOOK_LINES.as_mut().unwrap().iter() {
+    for book_line in book_lines.iter() {
         if book_match(&line, book_line) {
             // parse the book move that continues the line
             let m = parse_move(&book_line[line.len()..]);

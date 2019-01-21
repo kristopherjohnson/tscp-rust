@@ -23,8 +23,9 @@ mod eval;
 mod search;
 
 use crate::board::{gen, init_board, init_hash};
+use crate::book::{close_book, open_book};
 use crate::data::{MAX_DEPTH, MAX_TIME};
-use crate::defs::{MoveBytes, EMPTY};
+use crate::defs::{Int, MoveBytes, EMPTY};
 
 use std::time::{SystemTime, UNIX_EPOCH};
 
@@ -52,11 +53,11 @@ fn main() {
     // everything has to be marked "unsafe".  We know our usage is safe because
     // the program runs in a single thread, but we should eventually change the
     // members of the `data` module to be structs with associated methods and
-    // minimize the amount of unsafe code.
+    // minimize the amount of code considered unsafe in Rust.
     unsafe {
         init_hash();
         init_board();
-        // open_book();
+        open_book();
         gen();
         let mut computer_side = EMPTY;
         MAX_TIME = 1 << 25;
@@ -64,12 +65,19 @@ fn main() {
         loop {
             break;
         }
-        // close_book()
+        close_book()
     }
+}
+
+/// parse the move s (in coordinate notation) and return the move's index in
+/// GEN_DAT, or -1 if the move is illegal
+
+fn parse_move(s: &String) -> Int {
+    -1
 }
 
 /// move_str returns a string with move m in coordinate notation
 
-fn move_str(m: MoveBytes) -> String {
+fn move_str(m: &MoveBytes) -> String {
     "<move_str: TODO>".to_string()
 }

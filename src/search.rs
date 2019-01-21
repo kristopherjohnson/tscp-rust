@@ -16,7 +16,7 @@ use crate::defs::{Int, Move, HIST_STACK, MAX_PLY};
 use crate::eval::eval;
 use crate::{get_ms, move_str};
 
-use std::io::Write;
+use std::io::{stdout, Write};
 
 static mut STOP_SEARCH: bool = false;
 
@@ -78,10 +78,10 @@ unsafe fn think(output: Int) {
                 }
                 if output != 0 {
                     for j in 0..PV_LENGTH[0] {
-                        print!(" {}", move_str(PV[0][j].b));
+                        print!(" {}", move_str(&PV[0][j].b));
                     }
                     print!("\n");
-                    std::io::stdout().flush().expect("flush");
+                    stdout().flush().expect("flush");
                 }
                 if x > 9000 || x < -9000 {
                     return;

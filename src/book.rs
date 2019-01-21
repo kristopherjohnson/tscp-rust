@@ -27,14 +27,16 @@ static mut BOOK_LINES: Option<Vec<String>> = None;
 pub unsafe fn open_book() {
     libc::srand(libc::time(ptr::null_mut()) as u32);
 
-    let f = File::open("book.txt");
-    if f.is_err() {
-        println!("Opening book missing.");
-        BOOK_LINES = None;
-        return;
-    }
+    let f = match File::open("book.txt") {
+        Ok(file) => file,
+        Err(why) => {
+            println!("Opening book missing.");
+            BOOK_LINES = None;
+            return;
+        }
+    };
 
-    let mut reader = BufReader::new(f.unwrap());
+    let reader = BufReader::new(f);
     let lines: Vec<String> = reader
         .lines()
         .map(|line| line.expect("unable to read line from book.txt"))
@@ -53,21 +55,21 @@ pub unsafe fn close_book() {
 /// book move.
 
 pub unsafe fn book_move() -> Int {
+    if HPLY > 25 {
+        return -1;
+    }
+
+    let book_lines = match &BOOK_LINES {
+        Some(lines) => lines,
+        None => return -1,
+    };
+
     // #rust In C, this variable is just "move", but that is a reserved word in
     // Rust.
     let mut move_: [Int; 50] = [0; 50]; // the possible book moves
     let mut count: [Int; 50] = [0; 50]; // the number of occurrences of each move
     let mut moves = 0;
     let mut total_count = 0;
-
-    if HPLY > 25 {
-        return -1;
-    }
-
-    let book_lines = match &BOOK_LINES {
-        Some(lines) => { lines }
-        None => { return -1 }
-    };
 
     // line is a string with the current line, e.g., "e2e4 e7e5 g1f3 "
     let mut line = String::from("");

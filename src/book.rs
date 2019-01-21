@@ -75,7 +75,7 @@ pub unsafe fn book_move() -> Int {
     for book_line in BOOK_LINES.as_mut().unwrap().iter() {
         if book_match(&line, book_line) {
             // parse the book move that continues the line
-            let m = parse_move(&book_line[line.len()..].to_string());
+            let m = parse_move(&book_line[line.len()..]);
             if m == -1 {
                 continue;
             }
@@ -119,6 +119,6 @@ pub unsafe fn book_move() -> Int {
 
 /// book_match() returns true if the first part of s2 matches s1.
 
-fn book_match(s1: &String, s2: &String) -> bool {
+fn book_match(s1: &str, s2: &str) -> bool {
     s1.starts_with(s2)
 }

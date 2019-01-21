@@ -72,7 +72,7 @@ fn main() {
 /// parse the move s (in coordinate notation) and return the move's index in
 /// GEN_DAT, or -1 if the move is illegal
 
-fn parse_move(s: &String) -> Int {
+fn parse_move(s: &str) -> Int {
     -1
 }
 

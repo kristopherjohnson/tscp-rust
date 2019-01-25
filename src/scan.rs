@@ -5,26 +5,36 @@
 //
 // Rust port by Kristopher Johnson
 
-// #rust The original C code uses the C standard library's scanf("%s") to read
-// tokens from the input, but Rust's standard library does not provide an
-// analogous function.  This module provides a scan() function that is roughly
-// equivalent.
+// #rust The original C code uses the C standard library's scanf("%s") and
+// scanf("%d") mechanisms to read input values, but Rust's standard library does
+// not provide an analogous function.  This module provides functions that are
+// roughly equivalent.
 
 use std::io;
 use std::io::prelude::*;
+
+use crate::defs::Int;
 
 /// reads a whitespace-delimited token from stdin. returns an empty string on
 /// EOF. assumes input is 7-bit ASCII, and does not recognize Unicode whitespace
 /// other than ' ', '\t', '\n', '\r', and '\v'.
 
-pub fn scan() -> Result<String, io::Error> {
-    let mut reader = io::stdin().lock();
+pub fn scan_token() -> io::Result<String> {
+    let stdin = io::stdin();
+    let mut reader = stdin.lock();
+    scan_token_from(&mut reader)
+}
 
+/// reads a whitespace-delimited token from a reader. returns an empty string on
+/// EOF. assumes input is 7-bit ASCII, and does not recognize Unicode whitespace
+/// other than ' ', '\t', '\n', '\r', and '\v'.
+
+pub fn scan_token_from(reader: &mut Read) -> io::Result<String> {
     let mut bytes: Vec<u8> = Vec::new();
 
     // skip leading whitespace
     loop {
-        match read_byte(&mut reader) {
+        match read_byte(reader) {
             ReadByteResult::Ok(byte) => {
                 if !is_whitespace(byte) {
                     bytes.push(byte);
@@ -42,7 +52,7 @@ pub fn scan() -> Result<String, io::Error> {
 
     // copy bytes until whitespace or EOF
     loop {
-        match read_byte(&mut reader) {
+        match read_byte(reader) {
             ReadByteResult::Ok(byte) => {
                 if is_whitespace(byte) {
                     break;
@@ -60,10 +70,29 @@ pub fn scan() -> Result<String, io::Error> {
 
     // convert bytes to a String
     let s = match String::from_utf8(bytes) {
-        Ok(string) => string,
+        Ok(s) => s,
         Err(err) => return Err(io::Error::new(io::ErrorKind::InvalidData, err)),
     };
     Ok(s)
+}
+
+/// reads a whitespace-delimited integer value from stdin.
+
+pub fn scan_int() -> io::Result<Int> {
+    let stdin = io::stdin();
+    let mut reader = stdin.lock();
+    scan_int_from(&mut reader)
+}
+
+/// reads a whitespace-delimited integer value from a reader.
+
+pub fn scan_int_from(reader: &mut Read) -> io::Result<Int> {
+    let token = scan_token_from(reader)?;
+    let value: Int = match token.parse() {
+        Ok(n) => n,
+        Err(err) => return Err(io::Error::new(io::ErrorKind::InvalidData, err)),
+    };
+    Ok(value)
 }
 
 enum ReadByteResult {
@@ -90,5 +119,31 @@ fn is_whitespace(ascii: u8) -> bool {
     match ascii {
         0x9 | 0xa | 0xb | 0xd | 0x20 => true,
         _ => false,
+    }
+}
+
+// run "cargo test" to run unit tests for this module.
+#[cfg(test)]
+mod test {
+    //use parent::{scan_int_from, scan_token_from};
+    use crate::scan::*;
+
+    #[test]
+    fn test_scan_token() {
+        let input = String::from("  one   two three  ");
+        let mut bytes = input.as_bytes();
+        assert_eq!(scan_token_from(&mut bytes).unwrap(), "one");
+        assert_eq!(scan_token_from(&mut bytes).unwrap(), "two");
+        assert_eq!(scan_token_from(&mut bytes).unwrap(), "three");
+        assert_eq!(scan_token_from(&mut bytes).unwrap(), "");
+    }
+
+    #[test]
+    fn test_scan_int() {
+        let input = String::from("  123  456 789  ");
+        let mut bytes = input.as_bytes();
+        assert_eq!(scan_int_from(&mut bytes).unwrap(), 123);
+        assert_eq!(scan_int_from(&mut bytes).unwrap(), 456);
+        assert_eq!(scan_int_from(&mut bytes).unwrap(), 789);
     }
 }

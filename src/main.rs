@@ -250,6 +250,11 @@ unsafe fn parse_move(s: &str) -> Int {
 /// move_str returns a string with move m in coordinate notation
 
 unsafe fn move_str(m: &MoveBytes) -> String {
+    let from_col = char::from_u32_unchecked(col!(m.from) as u32 + 'a' as u32);
+    let from_row = 8 - row!(m.from);
+    let to_col = char::from_u32_unchecked(col!(m.to) as u32 + 'a' as u32);
+    let to_row = 8 - row!(m.to);
+
     if (m.bits & 32) != 0 {
         let c = match m.promote as Int {
             KNIGHT => 'n',
@@ -257,22 +262,9 @@ unsafe fn move_str(m: &MoveBytes) -> String {
             ROOK => 'r',
             _ => 'q',
         };
-        format!(
-            "{}{}{}{}{}",
-            char::from_u32_unchecked(col!(m.from) as u32 + 'a' as u32),
-            8 - row!(m.from),
-            char::from_u32_unchecked(col!(m.to) as u32 + 'a' as u32),
-            8 - row!(m.to),
-            c
-        )
+        format!("{}{}{}{}{}", from_col, from_row, to_col, to_row, c)
     } else {
-        format!(
-            "{}{}{}{}",
-            char::from_u32_unchecked(col!(m.from) as u32 + 'a' as u32),
-            8 - row!(m.from),
-            char::from_u32_unchecked(col!(m.to) as u32 + 'a' as u32),
-            8 - row!(m.to)
-        )
+        format!("{}{}{}{}", from_col, from_row, to_col, to_row)
     }
 }
 

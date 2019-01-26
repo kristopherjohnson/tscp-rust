@@ -172,7 +172,7 @@ pub const CASTLE_MASK: [Int; 64] = [
 ];
 
 /// the piece letters, for print_board()
-const PIECE_CHAR: [char; 6] = ['P', 'N', 'B', 'R', 'Q', 'K'];
+pub const PIECE_CHAR: [char; 6] = ['P', 'N', 'B', 'R', 'Q', 'K'];
 
 // the initial board state
 

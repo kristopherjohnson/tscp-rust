@@ -35,7 +35,7 @@ enum SearchResult {
 // 1 = normal output
 // 2 = xboard format output
 
-unsafe fn think(output: Int) {
+pub unsafe fn think(output: Int) {
     // try the opening book first
     PV[0][0].u = book_move();
     if PV[0][0].u != -1 {
@@ -142,7 +142,7 @@ unsafe fn search(alpha: Int, beta: Int, depth: Int) -> SearchResult {
     // loop through the moves
     for i in FIRST_MOVE[PLY]..FIRST_MOVE[PLY + 1] {
         sort(i);
-        if !makemove(GEN_DAT[i].m.b) {
+        if !makemove(&GEN_DAT[i].m.b) {
             continue;
         }
         f = true;
@@ -234,7 +234,7 @@ unsafe fn quiesce(alpha: Int, beta: Int) -> SearchResult {
     // loop through the moves
     for i in FIRST_MOVE[PLY]..FIRST_MOVE[PLY + 1] {
         sort(i);
-        if !makemove(GEN_DAT[i].m.b) {
+        if !makemove(&GEN_DAT[i].m.b) {
             continue;
         }
         match quiesce(-beta, -alpha) {
@@ -266,7 +266,7 @@ unsafe fn quiesce(alpha: Int, beta: Int) -> SearchResult {
 /// reps() returns the number of times the current position has been repeated.
 /// It compares the current value of hash to previous values.
 
-unsafe fn reps() -> Int {
+pub unsafe fn reps() -> Int {
     let mut r = 0;
     for i in (HPLY - FIFTY as usize)..HPLY {
         if HIST_DAT[i].hash == HASH {

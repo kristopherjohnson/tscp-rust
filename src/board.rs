@@ -417,7 +417,7 @@ unsafe fn gen_promote(from: usize, to: usize, bits: u8) {
 /// undoes whatever it did and returns FALSE. Otherwise, it
 /// returns TRUE.
 
-pub unsafe fn makemove(m: MoveBytes) -> bool {
+pub unsafe fn makemove(m: &MoveBytes) -> bool {
     let mut from: usize;
     let mut to: usize;
 
@@ -485,7 +485,7 @@ pub unsafe fn makemove(m: MoveBytes) -> bool {
     }
 
     // back up information so we can take the move back later.
-    HIST_DAT[HPLY].m.b = m;
+    HIST_DAT[HPLY].m.b = *m;
     HIST_DAT[HPLY].capture = PIECE[m.to as usize];
     HIST_DAT[HPLY].castle = CASTLE;
     HIST_DAT[HPLY].ep = EP;

@@ -6,8 +6,8 @@
 // Rust port by Kristopher Johnson
 
 // #rust The original C code uses the C standard library's scanf("%s") and
-// scanf("%d") mechanisms to read input values, but Rust's standard library does
-// not provide an analogous function.  This module provides functions that are
+// scanf("%d") to read input values, but Rust's standard library does not
+// provide an analogous function.  This module provides functions that are
 // roughly equivalent.
 
 use std::io;
@@ -125,8 +125,7 @@ fn is_whitespace(ascii: u8) -> bool {
 // run "cargo test" to run unit tests for this module.
 #[cfg(test)]
 mod test {
-    //use parent::{scan_int_from, scan_token_from};
-    use crate::scan::*;
+    use super::*;
 
     #[test]
     fn test_scan_token() {

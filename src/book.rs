@@ -29,7 +29,7 @@ pub unsafe fn open_book() {
 
     let f = match File::open("book.txt") {
         Ok(file) => file,
-        Err(why) => {
+        Err(_) => {
             println!("Opening book missing.");
             BOOK_LINES = None;
             return;
@@ -67,7 +67,7 @@ pub unsafe fn book_move() -> Int {
     // #rust In C, this variable is just "move", but that is a reserved word in
     // Rust.
     let mut move_: [Int; 50] = [0; 50]; // the possible book moves
-    let mut count: [Int; 50] = [0; 50]; // the number of occurrences of each move
+    let mut count: [Int; 50] = [0; 50]; // number of occurrences of each move
     let mut moves = 0;
     let mut total_count = 0;
 

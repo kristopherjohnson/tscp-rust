@@ -85,7 +85,7 @@ fn main() {
             }
 
             // get user input
-            print!("tcsp> ");
+            print!("tscp> ");
             io::stdout().flush().expect("unable to flush prompt output");
             let s = match scan_token() {
                 Ok(s) => s,

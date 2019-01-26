@@ -5,14 +5,14 @@
 //
 // Rust port by Kristopher Johnson
 
-use crate::data::{GEN_DAT, HIST_DAT, HPLY};
-use crate::defs::Int;
-use crate::{move_str, parse_move};
-
 use std::fs::File;
 use std::io::prelude::*;
 use std::io::BufReader;
 use std::ptr;
+
+use crate::data::{GEN_DAT, HIST_DAT, HPLY};
+use crate::defs::Int;
+use crate::{move_str, parse_move};
 
 // #rust The original C code keeps the book.txt file open throughout the
 // lifetime of the program and re-reads its contents whenever it wants to look
@@ -29,8 +29,8 @@ pub unsafe fn open_book() {
 
     let f = match File::open("book.txt") {
         Ok(file) => file,
-        Err(_) => {
-            println!("Opening book missing.");
+        Err(err) => {
+            println!("Opening book missing: {}.", err);
             BOOK_LINES = None;
             return;
         }
@@ -77,10 +77,15 @@ pub unsafe fn book_move() -> Int {
     for i in 0..HPLY {
         line = line + &format!("{} ", move_str(&HIST_DAT[i].m.b));
     }
+    println!("book_move: line to be matched is \"{}\"", line);
 
     // compare line to each line in the opening book
     for book_line in book_lines.iter() {
-        if book_match(&line, book_line) {
+        // #rust The C code has a function book_match() to check whether the
+        // prefix matches, but in Rust we can just call the standard library's
+        // starts_with() method.
+        if book_line.starts_with(&line) {
+            println!("book_move: matches \"{}\"", book_line);
             // parse the book move that continues the line
             let m = parse_move(&book_line[line.len()..]);
             if m == -1 {
@@ -122,10 +127,4 @@ pub unsafe fn book_move() -> Int {
     }
 
     -1
-}
-
-/// book_match() returns true if the first part of s2 matches s1.
-
-fn book_match(s1: &str, s2: &str) -> bool {
-    s1.starts_with(s2)
 }

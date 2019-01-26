@@ -207,7 +207,6 @@ unsafe fn parse_move(s: &str) -> Int {
     // make sure the string looks like a move
     let len = s.len();
     if len < 4
-        || len > 5
         || s[0] < 'a'
         || s[0] > 'h'
         || s[1] < '0'
@@ -232,6 +231,9 @@ unsafe fn parse_move(s: &str) -> Int {
             // if the move is a promotion, handle the promotion piece; assume
             // that the promotion moves occur consecutively in GEN_DAT.
             if (GEN_DAT[i].m.b.bits & 32) != 0 {
+                if s.len() < 5 {
+                    return i as Int + 3; // assume it's a queen
+                }
                 match s[4] {
                     'N' | 'n' => return i as Int,
                     'B' | 'b' => return i as Int + 1,

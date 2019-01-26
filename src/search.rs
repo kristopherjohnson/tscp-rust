@@ -66,7 +66,7 @@ pub unsafe fn think(output: Int) {
             }
             SearchResult::Value(x) => {
                 if output == 1 {
-                    print!("{:<3}  {:<9}  {:<5} ", i, NODES, x);
+                    print!("{:3}  {:9}  {:5} ", i, NODES, x);
                 } else if output == 2 {
                     print!(
                         "{} {} {} {}",

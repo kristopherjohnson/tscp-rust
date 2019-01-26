@@ -77,7 +77,6 @@ pub unsafe fn book_move() -> Int {
     for i in 0..HPLY {
         line = line + &format!("{} ", move_str(&HIST_DAT[i].m.b));
     }
-    println!("book_move: line to be matched is \"{}\"", line);
 
     // compare line to each line in the opening book
     for book_line in book_lines.iter() {
@@ -85,7 +84,6 @@ pub unsafe fn book_move() -> Int {
         // prefix matches, but in Rust we can just call the standard library's
         // starts_with() method.
         if book_line.starts_with(&line) {
-            println!("book_move: matches \"{}\"", book_line);
             // parse the book move that continues the line
             let m = parse_move(&book_line[line.len()..]);
             if m == -1 {

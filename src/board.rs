@@ -418,8 +418,8 @@ unsafe fn gen_promote(from: usize, to: usize, bits: u8) {
 /// returns TRUE.
 
 pub unsafe fn makemove(m: &MoveBytes) -> bool {
-    let mut from: usize;
-    let mut to: usize;
+    let from: usize;
+    let to: usize;
 
     // test to see if a castle move is legal and move the rook (the king is
     // moved with the usual move code later)

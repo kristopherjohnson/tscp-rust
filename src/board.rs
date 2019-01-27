@@ -7,8 +7,8 @@
 
 use crate::data::{
     CASTLE, CASTLE_MASK, COLOR, EP, FIFTY, FIRST_MOVE, GEN_DAT, HASH, HASH_EP,
-    HASH_PIECE, HASH_SIDE, HIST_DAT, HPLY, INIT_COLOR, INIT_PIECE, MAILBOX,
-    MAILBOX64, OFFSET, OFFSETS, PIECE, PLY, SIDE, SLIDE, XSIDE,
+    HASH_PIECE, HASH_SIDE, HISTORY, HIST_DAT, HPLY, INIT_COLOR, INIT_PIECE,
+    MAILBOX, MAILBOX64, OFFSET, OFFSETS, PIECE, PLY, SIDE, SLIDE, XSIDE,
 };
 use crate::defs::{
     Int, MoveBytes, A1, A8, B1, B8, C1, C8, D1, D8, DARK, E1, E8, EMPTY, F1,
@@ -395,6 +395,8 @@ unsafe fn gen_push(from: usize, to: usize, bits: u8) {
     g.m.b.bits = bits;
     if COLOR[to] != EMPTY {
         g.score = 1000000 + PIECE[to] * 10 - PIECE[from];
+    } else {
+        g.score = HISTORY[from][to];
     }
 }
 

@@ -79,7 +79,7 @@ unsafe fn hash_rand() -> Int {
 /// XORed if there is one. (A chess technicality is that one position can't
 /// be a repetition of another if the en passant state is different.)
 
-unsafe fn set_hash() {
+pub unsafe fn set_hash() {
     HASH = 0;
     for i in 0..COLOR.len() {
         if COLOR[i] != EMPTY {

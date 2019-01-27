@@ -22,11 +22,13 @@ mod eval;
 mod scan;
 mod search;
 
-use crate::board::{gen, in_check, init_board, init_hash, makemove, takeback};
+use crate::board::{
+    gen, in_check, init_board, init_hash, makemove, set_hash, takeback,
+};
 use crate::book::{close_book, open_book};
 use crate::data::{
-    COLOR, FIFTY, FIRST_MOVE, GEN_DAT, HPLY, MAX_DEPTH, MAX_TIME, PIECE,
-    PIECE_CHAR, PLY, PV, SIDE,
+    CASTLE, COLOR, EP, FIFTY, FIRST_MOVE, GEN_DAT, HPLY, MAX_DEPTH, MAX_TIME,
+    NODES, PIECE, PIECE_CHAR, PLY, PV, SIDE, START_TIME, XSIDE,
 };
 use crate::defs::{Int, MoveBytes, BISHOP, DARK, EMPTY, KNIGHT, LIGHT, ROOK};
 use crate::scan::{scan_int, scan_token};
@@ -337,7 +339,81 @@ unsafe fn print_result() {
 // second TSCP searches.  It sets the position to move 17 of Bobby Fischer vs.
 // J. Sherwin, New Jersey State Open Championship, 9/2/1957.  Then it searches
 // five ply three times. It calculates nodes per second from the best time. */
+#[rustfmt::skip]
+const BENCH_COLOR: [Int; 64] = [
+    6, 1, 1, 6, 6, 1, 1, 6,
+    1, 6, 6, 6, 6, 1, 1, 1,
+    6, 1, 6, 1, 1, 6, 1, 6,
+    6, 6, 6, 1, 6, 6, 0, 6,
+    6, 6, 1, 0, 6, 6, 6, 6,
+    6, 6, 0, 6, 6, 6, 0, 6,
+    0, 0, 0, 6, 6, 0, 0, 0,
+    0, 6, 0, 6, 0, 6, 0, 6
+];
+
+#[rustfmt::skip]
+const BENCH_PIECE: [Int; 64] = [
+    6, 3, 2, 6, 6, 3, 5, 6,
+    0, 6, 6, 6, 6, 0, 0, 0,
+    6, 0, 6, 4, 0, 6, 1, 6,
+    6, 6, 6, 1, 6, 6, 1, 6,
+    6, 6, 0, 0, 6, 6, 6, 6,
+    6, 6, 0, 6, 6, 6, 0, 6,
+    0, 0, 4, 6, 6, 0, 2, 0,
+    3, 6, 2, 6, 3, 6, 5, 6
+];
+
 unsafe fn bench() {
-    // #rust TODO
-    println!("<bench: unimplemented>");
+    let mut t: [Int; 3] = [0; 3];
+
+    // setting the position to a non-initial position confuses the opening book
+    // code.
+    close_book();
+
+    for i in 0..64 {
+        COLOR[i] = BENCH_COLOR[i];
+        PIECE[i] = BENCH_PIECE[i];
+    }
+    SIDE = LIGHT;
+    XSIDE = DARK;
+    CASTLE = 0;
+    EP = -1;
+    FIFTY = 0;
+    PLY = 0;
+    HPLY = 0;
+    set_hash();
+    print_board();
+    MAX_TIME = 1 << 25;
+    MAX_DEPTH = 5;
+    for i in 0..3 {
+        think(1);
+        t[i] = (get_ms() - START_TIME) as Int;
+        println!("Time: {} ms", t[i]);
+    }
+    if t[1] < t[0] {
+        t[0] = t[1];
+    }
+    if t[2] < t[0] {
+        t[0] = t[2];
+    }
+    println!("");
+    println!("Nodes: {}", NODES);
+    println!("Best time: {} ms", t[0]);
+    if t[0] == 0 {
+        println!("(invalid)");
+        return;
+    }
+    let nps = (NODES as f64) / (t[0] as f64);
+    let nps = nps * 1000.0;
+
+    // Score: 1.00 = my Athlon XP 2000+
+    println!(
+        "Nodes per second: {} (Score: {:.3})",
+        nps as i32,
+        nps / 243169.0
+    );
+
+    init_board();
+    open_book();
+    gen();
 }

@@ -166,7 +166,7 @@ pub unsafe fn gen() {
     // so far, we have no moves for the current ply
     FIRST_MOVE[PLY + 1] = FIRST_MOVE[PLY];
 
-    for i in 0..COLOR.len() {
+    for i in 0..64 {
         if COLOR[i] == SIDE {
             if PIECE[i] == PAWN {
                 if SIDE == LIGHT {
@@ -280,7 +280,7 @@ pub unsafe fn gen() {
 
 pub unsafe fn gen_caps() {
     FIRST_MOVE[PLY + 1] = FIRST_MOVE[PLY];
-    for i in 0..COLOR.len() {
+    for i in 0..64 {
         if COLOR[i] == SIDE {
             if PIECE[i] == PAWN {
                 if SIDE == LIGHT {
@@ -428,8 +428,8 @@ pub unsafe fn makemove(m: &MoveBytes) -> bool {
         if in_check(SIDE) {
             return false;
         }
-        match m.to as usize {
-            G1 => {
+        match m.to {
+            62 => {
                 if COLOR[F1] != EMPTY
                     || COLOR[G1] != EMPTY
                     || attack(F1, XSIDE)
@@ -440,7 +440,7 @@ pub unsafe fn makemove(m: &MoveBytes) -> bool {
                 from = H1;
                 to = F1;
             }
-            C1 => {
+            58 => {
                 if COLOR[B1] != EMPTY
                     || COLOR[C1] != EMPTY
                     || COLOR[D1] != EMPTY
@@ -452,7 +452,7 @@ pub unsafe fn makemove(m: &MoveBytes) -> bool {
                 from = A1;
                 to = D1;
             }
-            G8 => {
+            6 => {
                 if COLOR[F8] != EMPTY
                     || COLOR[G8] != EMPTY
                     || attack(F8, XSIDE)
@@ -463,7 +463,7 @@ pub unsafe fn makemove(m: &MoveBytes) -> bool {
                 from = H8;
                 to = F8;
             }
-            C8 => {
+            2 => {
                 if COLOR[B8] != EMPTY
                     || COLOR[C8] != EMPTY
                     || COLOR[D8] != EMPTY

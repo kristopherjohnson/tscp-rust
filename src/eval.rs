@@ -114,7 +114,7 @@ pub unsafe fn eval() -> Int {
     let mut score = [0; 2];
 
     // this is the first pass: set up PAWN_RANK, PIECE_MAT, and PAWN_MAT
-    for i in 0..PAWN_RANK.len() {
+    for i in 0..10 {
         PAWN_RANK[LIGHT as usize][i] = 0;
         PAWN_RANK[DARK as usize][i] = 7;
     }
@@ -122,7 +122,7 @@ pub unsafe fn eval() -> Int {
     PIECE_MAT[DARK as usize] = 0;
     PAWN_MAT[LIGHT as usize] = 0;
     PAWN_MAT[DARK as usize] = 0;
-    for i in 0..COLOR.len() {
+    for i in 0..64 {
         if COLOR[i] == EMPTY {
             continue;
         }
@@ -147,7 +147,7 @@ pub unsafe fn eval() -> Int {
     score[LIGHT as usize] =
         PIECE_MAT[LIGHT as usize] + PAWN_MAT[LIGHT as usize];
     score[DARK as usize] = PIECE_MAT[DARK as usize] + PAWN_MAT[DARK as usize];
-    for i in 0..COLOR.len() {
+    for i in 0..64 {
         if COLOR[i] == EMPTY {
             continue;
         }
@@ -238,7 +238,7 @@ unsafe fn eval_light_pawn(sq: usize) -> Int {
     r += PAWN_PCSQ[sq];
 
     // if there's a pawn behind this one, it's doubled
-    if PAWN_RANK[LIGHT as usize][f] > row!(sq as Int) {
+    if PAWN_RANK[LIGHT as usize][f] > row {
         r -= DOUBLED_PAWN_PENALTY;
     }
 
@@ -261,7 +261,7 @@ unsafe fn eval_light_pawn(sq: usize) -> Int {
         && (PAWN_RANK[DARK as usize][f] >= row)
         && (PAWN_RANK[DARK as usize][f + 1] >= row)
     {
-        r += (7 - row!(sq as Int)) * PASSED_PAWN_BONUS;
+        r += (7 - row) * PASSED_PAWN_BONUS;
     }
 
     r

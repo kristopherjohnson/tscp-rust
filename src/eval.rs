@@ -304,7 +304,7 @@ unsafe fn eval_dark_pawn(sq: usize) -> Int {
     // add a bonus if the pawn is passed
     if (PAWN_RANK[LIGHT as usize][f - 1] <= row)
         && (PAWN_RANK[LIGHT as usize][f] <= row)
-        && (PAWN_RANK[LIGHT as usize][f + 1] < row)
+        && (PAWN_RANK[LIGHT as usize][f + 1] <= row)
     {
         r += row * PASSED_PAWN_BONUS;
     }

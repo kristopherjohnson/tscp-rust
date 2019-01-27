@@ -322,7 +322,6 @@ pub unsafe fn gen_caps() {
                             }
                             break;
                         }
-                        gen_push!(i, n, 0);
                         if !SLIDE[PIECE[i] as usize] {
                             break;
                         }

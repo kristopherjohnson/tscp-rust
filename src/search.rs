@@ -138,6 +138,7 @@ unsafe fn search(alpha: Int, beta: Int, depth: Int) -> SearchResult {
     }
     let mut f = false;
     let mut alpha = alpha;
+    let mut x;
 
     // loop through the moves
     for i in FIRST_MOVE[PLY]..FIRST_MOVE[PLY + 1] {
@@ -150,7 +151,8 @@ unsafe fn search(alpha: Int, beta: Int, depth: Int) -> SearchResult {
             SearchResult::Timeout => {
                 return SearchResult::Timeout;
             }
-            SearchResult::Value(x) => {
+            SearchResult::Value(value) => {
+                x = -value;
                 takeback();
                 if x > alpha {
                     // this move caused a cutoff, so increase the history value
@@ -216,7 +218,7 @@ unsafe fn quiesce(alpha: Int, beta: Int) -> SearchResult {
     }
 
     // check with the evaluation function
-    let x = eval();
+    let mut x = eval();
     if x >= beta {
         return SearchResult::Value(beta);
     }
@@ -241,8 +243,8 @@ unsafe fn quiesce(alpha: Int, beta: Int) -> SearchResult {
             SearchResult::Timeout => {
                 return SearchResult::Timeout;
             }
-            SearchResult::Value(x) => {
-                let x = -x;
+            SearchResult::Value(value) => {
+                x = -value;
                 takeback();
                 if x > alpha {
                     if x >= beta {

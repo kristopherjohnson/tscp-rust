@@ -165,9 +165,9 @@ pub unsafe fn eval() -> Int {
                 ROOK => {
                     if PAWN_RANK[LIGHT as usize][col!(i) + 1] == 0 {
                         if PAWN_RANK[DARK as usize][col!(i) + 1] == 7 {
-                            score[LIGHT as usize] = ROOK_OPEN_FILE_BONUS;
+                            score[LIGHT as usize] += ROOK_OPEN_FILE_BONUS;
                         } else {
-                            score[LIGHT as usize] = ROOK_SEMI_OPEN_FILE_BONUS;
+                            score[LIGHT as usize] += ROOK_SEMI_OPEN_FILE_BONUS;
                         }
                     }
                     if row!(i) == 1 {
@@ -198,6 +198,9 @@ pub unsafe fn eval() -> Int {
                     if PAWN_RANK[DARK as usize][col!(i) + 1] == 7 {
                         if PAWN_RANK[LIGHT as usize][col!(i) + 1] == 0 {
                             score[DARK as usize] += ROOK_OPEN_FILE_BONUS;
+                        }
+                        else {
+                            score[DARK as usize] += ROOK_SEMI_OPEN_FILE_BONUS;
                         }
                     }
                     if row!(i) == 6 {

@@ -113,7 +113,7 @@ unsafe fn search(alpha: Int, beta: Int, depth: Int) -> SearchResult {
     // if this isn't the root of the search tree (where we have to pick a move
     // and can't simply return 0) then check to see if the position is a repeat.
     // if so, we can assume that this line is a draw and return 0.
-    if PLY != 0 && reps() == 0 {
+    if PLY != 0 && reps() != 0 {
         return SearchResult::Value(0);
     }
 

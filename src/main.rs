@@ -303,8 +303,144 @@ unsafe fn print_board() {
 // http://www.research.digital.com/SRC/personal/mann/xboard/engine-intf.html
 
 unsafe fn xboard() {
-    // #rust TODO
-    println!("<xboard: unimplemented>");
+    let mut post = 0;
+
+    // #rust TODO: Find a way to do this in Rust:
+    //signal(SIGINT, SIG_IGN);
+    println!("");
+    init_board();
+    gen();
+    let mut computer_side = EMPTY;
+    loop {
+        io::stdout()
+            .flush()
+            .expect("unable to flush standard output");
+        if SIDE == computer_side {
+            think(post);
+            if PV[0][0].u == 0 {
+                computer_side = EMPTY;
+                continue;
+            }
+            println!("move {}", move_str(&PV[0][0].b));
+            makemove(&PV[0][0].b);
+            PLY = 0;
+            gen();
+            print_result();
+            continue;
+        }
+        let command = match scan_token() {
+            Ok(s) => s,
+            Err(err) => {
+                println!("input error: {}", err);
+                return;
+            }
+        };
+        if command.len() == 0 {
+            // #rust: EOF
+            return;
+        }
+        match command.as_ref() {
+            "xboard" => continue,
+            "new" => {
+                init_board();
+                gen();
+                computer_side = DARK;
+            }
+            "quit" => return,
+            "force" => {
+                computer_side = EMPTY;
+            }
+            "white" => {
+                SIDE = LIGHT;
+                XSIDE = DARK;
+                gen();
+                computer_side = DARK;
+            }
+            "black" => {
+                SIDE = DARK;
+                XSIDE = LIGHT;
+                gen();
+                computer_side = LIGHT;
+            }
+            "st" => {
+                let n = match scan_int() {
+                    Ok(n) => n,
+                    Err(err) => {
+                        println!("unable to read st argument: {}", err);
+                        return;
+                    }
+                };
+                MAX_TIME = n * 1000;
+                MAX_DEPTH = 32;
+            }
+            "sd" => {
+                let n = match scan_int() {
+                    Ok(n) => n,
+                    Err(err) => {
+                        println!("unable to read sd argument: {}", err);
+                        return;
+                    }
+                };
+                MAX_DEPTH = n;
+                MAX_TIME = 1 << 25;
+            }
+            "time" => {
+                let n = match scan_int() {
+                    Ok(n) => n,
+                    Err(err) => {
+                        println!("unable to read time argument: {}", err);
+                        return;
+                    }
+                };
+                MAX_TIME = (n * 10) / 30;
+                MAX_DEPTH = 32;
+            }
+            "otim" => continue,
+            "go" => {
+                computer_side = SIDE;
+            }
+            "hint" => {
+                think(0);
+                if PV[0][0].u == 0 {
+                    continue;
+                }
+                println!("Hint: {}", move_str(&PV[0][0].b));
+            }
+            "undo" => {
+                if HPLY == 0 {
+                    continue;
+                }
+                takeback();
+                PLY = 0;
+                gen();
+            }
+            "remove" => {
+                if HPLY < 2 {
+                    continue;
+                }
+                takeback();
+                takeback();
+                PLY = 0;
+                gen();
+            }
+            "post" => {
+                post = 2;
+            }
+            "nopost" => {
+                post = 0;
+            }
+            _ => {
+                let m = parse_move(&command);
+                if m == -1 || !makemove(&GEN_DAT[m as usize].m.b) {
+                    println!("Error (unknown command): {}", command);
+                } else {
+                    PLY = 0;
+                    gen();
+                    print_result();
+                }
+            }
+        }
+    }
 }
 
 /// print_result() checks to see if the game is over, and if so, prints the result.

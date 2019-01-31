@@ -26,10 +26,7 @@ use crate::board::{
     gen, in_check, init_board, init_hash, makemove, set_hash, takeback,
 };
 use crate::book::{close_book, open_book};
-use crate::data::{
-    CASTLE, COLOR, EP, FIFTY, FIRST_MOVE, GEN_DAT, HPLY, MAX_DEPTH, MAX_TIME,
-    NODES, PIECE, PIECE_CHAR, PLY, PV, SIDE, START_TIME, XSIDE,
-};
+use crate::data::{Data, PIECE_CHAR};
 use crate::defs::{Int, MoveBytes, BISHOP, DARK, EMPTY, KNIGHT, LIGHT, ROOK};
 use crate::scan::{scan_int, scan_token};
 use crate::search::{reps, think};
@@ -45,7 +42,7 @@ fn get_ms() -> u128 {
 
 /// tscp command loop.  Called by main().
 
-pub fn process_commands() {
+pub fn tscp_main() {
     const BANNER: [&'static str; 9] = [
         "",
         "Tom Kerrigan's Simple Chess Program (TSCP)",
@@ -61,35 +58,38 @@ pub fn process_commands() {
         println!("{}", line);
     }
 
+    let mut d = Data::new();
+
     // #rust TODO: Due to use of static mutable variables in the `data` module,
     // everything has to be marked "unsafe".  We know our usage is safe because
     // the program runs in a single thread, but we should eventually change the
     // members of the `data` module to be structs with associated methods and
     // minimize the amount of code considered unsafe in Rust.
     unsafe {
-        init_hash();
-        init_board();
+        init_hash(&mut d);
+        init_board(&mut d);
         open_book();
-        gen();
+        gen(&mut d);
         let mut computer_side = EMPTY;
-        MAX_TIME = 1 << 25;
-        MAX_DEPTH = 4;
+        d.max_time = 1 << 25;
+        d.max_depth = 4;
         loop {
-            if SIDE == computer_side {
+            if d.side == computer_side {
                 // computer's turn
 
                 // think about the move and make it
-                think(1);
-                if PV[0][0].u == 0 {
+                think(&mut d, 1);
+                if d.pv[0][0].u == 0 {
                     println!("(no legal moves");
                     computer_side = EMPTY;
                     continue;
                 }
-                println!("Computer's move: {}", move_str(&PV[0][0].b));
-                makemove(&PV[0][0].b);
-                PLY = 0;
-                gen();
-                print_result();
+                let m = d.pv[0][0].b;
+                println!("Computer's move: {}", move_str(m));
+                makemove(&mut d, m);
+                d.ply = 0;
+                gen(&mut d);
+                print_result(&mut d);
                 continue;
             }
 
@@ -109,7 +109,7 @@ pub fn process_commands() {
             }
             match s.as_ref() {
                 "on" => {
-                    computer_side = SIDE;
+                    computer_side = d.side;
                     continue;
                 }
                 "off" => {
@@ -124,8 +124,8 @@ pub fn process_commands() {
                             return;
                         }
                     };
-                    MAX_TIME = n * 1000;
-                    MAX_DEPTH = 32;
+                    d.max_time = n * 1000;
+                    d.max_depth = 32;
                     continue;
                 }
                 "sd" => {
@@ -136,33 +136,33 @@ pub fn process_commands() {
                             return;
                         }
                     };
-                    MAX_DEPTH = n;
-                    MAX_TIME = 1 << 25;
+                    d.max_depth = n;
+                    d.max_time = 1 << 25;
                     continue;
                 }
                 "undo" => {
-                    if HPLY == 0 {
+                    if d.hply == 0 {
                         continue;
                     }
                     computer_side = EMPTY;
-                    takeback();
-                    PLY = 0;
-                    gen();
+                    takeback(&mut d);
+                    d.ply = 0;
+                    gen(&mut d);
                     continue;
                 }
                 "new" => {
                     computer_side = EMPTY;
-                    init_board();
-                    gen();
+                    init_board(&mut d);
+                    gen(&mut d);
                     continue;
                 }
                 "d" => {
-                    print_board();
+                    print_board(&d);
                     continue;
                 }
                 "bench" => {
                     computer_side = EMPTY;
-                    bench();
+                    bench(&mut d);
                     continue;
                 }
                 "bye" => {
@@ -170,7 +170,7 @@ pub fn process_commands() {
                     break;
                 }
                 "xboard" => {
-                    xboard();
+                    xboard(&mut d);
                     break;
                 }
                 "help" => {
@@ -193,13 +193,18 @@ pub fn process_commands() {
                 }
                 _ => {
                     // maybe the user entered a move?
-                    let m = parse_move(&s);
-                    if m == -1 || !makemove(&GEN_DAT[m as usize].m.b) {
+                    let m = parse_move(&d, &s);
+                    if m == -1 {
                         println!("Illegal move.");
                     } else {
-                        PLY = 0;
-                        gen();
-                        print_result();
+                        let m = d.gen_dat[m as usize].m.b;
+                        if !makemove(&mut d, m) {
+                            println!("Illegal move.");
+                        } else {
+                            d.ply = 0;
+                            gen(&mut d);
+                            print_result(&mut d);
+                        }
                     }
                 }
             }
@@ -209,9 +214,9 @@ pub fn process_commands() {
 }
 
 /// parse the move s (in coordinate notation) and return the move's index in
-/// GEN_DAT, or -1 if the move is illegal
+/// d.gen_dat, or -1 if the move is illegal
 
-unsafe fn parse_move(s: &str) -> Int {
+unsafe fn parse_move(d: &Data, s: &str) -> Int {
     // convert string to vector of characters
     let s: Vec<char> = String::from(s).chars().collect();
 
@@ -237,11 +242,11 @@ unsafe fn parse_move(s: &str) -> Int {
     let to = to + 8 * (8 - (s[3] as u32 - '0' as u32));
     let to = to as u8;
 
-    for i in 0..FIRST_MOVE[1] {
-        if GEN_DAT[i].m.b.from == from && GEN_DAT[i].m.b.to == to {
+    for i in 0..d.first_move[1] {
+        if d.gen_dat[i].m.b.from == from && d.gen_dat[i].m.b.to == to {
             // if the move is a promotion, handle the promotion piece; assume
-            // that the promotion moves occur consecutively in GEN_DAT.
-            if (GEN_DAT[i].m.b.bits & 32) != 0 {
+            // that the promotion moves occur consecutively in d.gen_dat.
+            if (d.gen_dat[i].m.b.bits & 32) != 0 {
                 if s.len() < 5 {
                     return i as Int + 3; // assume it's a queen
                 }
@@ -262,7 +267,7 @@ unsafe fn parse_move(s: &str) -> Int {
 
 /// move_str returns a string with move m in coordinate notation
 
-unsafe fn move_str(m: &MoveBytes) -> String {
+unsafe fn move_str(m: MoveBytes) -> String {
     let from_col = char::from_u32_unchecked(col!(m.from) as u32 + 'a' as u32);
     let from_row = 8 - row!(m.from);
     let to_col = char::from_u32_unchecked(col!(m.to) as u32 + 'a' as u32);
@@ -283,18 +288,18 @@ unsafe fn move_str(m: &MoveBytes) -> String {
 
 /// print_board() prints the board
 
-unsafe fn print_board() {
+unsafe fn print_board(d: &Data) {
     print!("\n8 ");
     for i in 0..64 {
-        match COLOR[i] {
+        match d.color[i] {
             EMPTY => {
                 print!(" .");
             }
             LIGHT => {
-                print!(" {}", PIECE_CHAR[PIECE[i as usize] as usize]);
+                print!(" {}", PIECE_CHAR[d.piece[i as usize] as usize]);
             }
             DARK => {
-                let light_char = PIECE_CHAR[PIECE[i as usize] as usize];
+                let light_char = PIECE_CHAR[d.piece[i as usize] as usize];
                 let dark_char_u32 = light_char as u32 + 'a' as u32 - 'A' as u32;
                 print!(" {}", char::from_u32_unchecked(dark_char_u32));
             }
@@ -311,30 +316,31 @@ unsafe fn print_board() {
 // See the following page for details:
 // http://www.research.digital.com/SRC/personal/mann/xboard/engine-intf.html
 
-unsafe fn xboard() {
+unsafe fn xboard(d: &mut Data) {
     let mut post = 0;
 
     // #rust TODO: Find a way to do this in Rust:
     //signal(SIGINT, SIG_IGN);
     println!("");
-    init_board();
-    gen();
+    init_board(d);
+    gen(d);
     let mut computer_side = EMPTY;
     loop {
         io::stdout()
             .flush()
             .expect("unable to flush standard output");
-        if SIDE == computer_side {
-            think(post);
-            if PV[0][0].u == 0 {
+        if d.side == computer_side {
+            think(d, post);
+            if d.pv[0][0].u == 0 {
                 computer_side = EMPTY;
                 continue;
             }
-            println!("move {}", move_str(&PV[0][0].b));
-            makemove(&PV[0][0].b);
-            PLY = 0;
-            gen();
-            print_result();
+            let m = d.pv[0][0].b;
+            println!("move {}", move_str(m));
+            makemove(d, m);
+            d.ply = 0;
+            gen(d);
+            print_result(d);
             continue;
         }
         let command = match scan_token() {
@@ -351,8 +357,8 @@ unsafe fn xboard() {
         match command.as_ref() {
             "xboard" => continue,
             "new" => {
-                init_board();
-                gen();
+                init_board(d);
+                gen(d);
                 computer_side = DARK;
             }
             "quit" => return,
@@ -360,15 +366,15 @@ unsafe fn xboard() {
                 computer_side = EMPTY;
             }
             "white" => {
-                SIDE = LIGHT;
-                XSIDE = DARK;
-                gen();
+                d.side = LIGHT;
+                d.xside = DARK;
+                gen(d);
                 computer_side = DARK;
             }
             "black" => {
-                SIDE = DARK;
-                XSIDE = LIGHT;
-                gen();
+                d.side = DARK;
+                d.xside = LIGHT;
+                gen(d);
                 computer_side = LIGHT;
             }
             "st" => {
@@ -379,8 +385,8 @@ unsafe fn xboard() {
                         return;
                     }
                 };
-                MAX_TIME = n * 1000;
-                MAX_DEPTH = 32;
+                d.max_time = n * 1000;
+                d.max_depth = 32;
             }
             "sd" => {
                 let n = match scan_int() {
@@ -390,8 +396,8 @@ unsafe fn xboard() {
                         return;
                     }
                 };
-                MAX_DEPTH = n;
-                MAX_TIME = 1 << 25;
+                d.max_depth = n;
+                d.max_time = 1 << 25;
             }
             "time" => {
                 let n = match scan_int() {
@@ -401,36 +407,36 @@ unsafe fn xboard() {
                         return;
                     }
                 };
-                MAX_TIME = (n * 10) / 30;
-                MAX_DEPTH = 32;
+                d.max_time = (n * 10) / 30;
+                d.max_depth = 32;
             }
             "otim" => continue,
             "go" => {
-                computer_side = SIDE;
+                computer_side = d.side;
             }
             "hint" => {
-                think(0);
-                if PV[0][0].u == 0 {
+                think(d, 0);
+                if d.pv[0][0].u == 0 {
                     continue;
                 }
-                println!("Hint: {}", move_str(&PV[0][0].b));
+                println!("Hint: {}", move_str(d.pv[0][0].b));
             }
             "undo" => {
-                if HPLY == 0 {
+                if d.hply == 0 {
                     continue;
                 }
-                takeback();
-                PLY = 0;
-                gen();
+                takeback(d);
+                d.ply = 0;
+                gen(d);
             }
             "remove" => {
-                if HPLY < 2 {
+                if d.hply < 2 {
                     continue;
                 }
-                takeback();
-                takeback();
-                PLY = 0;
-                gen();
+                takeback(d);
+                takeback(d);
+                d.ply = 0;
+                gen(d);
             }
             "post" => {
                 post = 2;
@@ -439,13 +445,18 @@ unsafe fn xboard() {
                 post = 0;
             }
             _ => {
-                let m = parse_move(&command);
-                if m == -1 || !makemove(&GEN_DAT[m as usize].m.b) {
+                let m = parse_move(&d, &command);
+                if m == -1 {
                     println!("Error (unknown command): {}", command);
                 } else {
-                    PLY = 0;
-                    gen();
-                    print_result();
+                    let m = d.gen_dat[m as usize].m.b;
+                    if !makemove(d, m) {
+                        println!("Error (unknown command): {}", command);
+                    } else {
+                        d.ply = 0;
+                        gen(d);
+                        print_result(d);
+                    }
                 }
             }
         }
@@ -454,18 +465,18 @@ unsafe fn xboard() {
 
 /// print_result() checks to see if the game is over, and if so, prints the result.
 
-unsafe fn print_result() {
+unsafe fn print_result(d: &mut Data) {
     let mut i = 0;
-    while i < FIRST_MOVE[1] {
-        if makemove(&GEN_DAT[i].m.b) {
-            takeback();
+    while i < d.first_move[1] {
+        if makemove(d, d.gen_dat[i].m.b) {
+            takeback(d);
             break;
         }
         i += 1;
     }
-    if i == FIRST_MOVE[1] {
-        if in_check(SIDE) {
-            if SIDE == LIGHT {
+    if i == d.first_move[1] {
+        if in_check(&d, d.side) {
+            if d.side == LIGHT {
                 println!("0-1 {{Black mates}}");
             } else {
                 println!("1-0 {{White mates}}");
@@ -473,9 +484,9 @@ unsafe fn print_result() {
         } else {
             println!("1/2-1/2 {{Stalemate}}");
         }
-    } else if reps() == 2 {
+    } else if reps(&d) == 2 {
         println!("1/2-1/2 {{Draw by repetition}}");
-    } else if FIFTY >= 100 {
+    } else if d.fifty >= 100 {
         println!("1/2-1/2 {{Draw by fifty move rule}}");
     }
 }
@@ -508,7 +519,7 @@ const BENCH_PIECE: [Int; 64] = [
     3, 6, 2, 6, 3, 6, 5, 6
 ];
 
-unsafe fn bench() {
+unsafe fn bench(d: &mut Data) {
     let mut t: [Int; 3] = [0; 3];
 
     // setting the position to a non-initial position confuses the opening book
@@ -516,23 +527,23 @@ unsafe fn bench() {
     close_book();
 
     for i in 0..64 {
-        COLOR[i] = BENCH_COLOR[i];
-        PIECE[i] = BENCH_PIECE[i];
+        d.color[i] = BENCH_COLOR[i];
+        d.piece[i] = BENCH_PIECE[i];
     }
-    SIDE = LIGHT;
-    XSIDE = DARK;
-    CASTLE = 0;
-    EP = -1;
-    FIFTY = 0;
-    PLY = 0;
-    HPLY = 0;
-    set_hash();
-    print_board();
-    MAX_TIME = 1 << 25;
-    MAX_DEPTH = 5;
+    d.side = LIGHT;
+    d.xside = DARK;
+    d.castle = 0;
+    d.ep = -1;
+    d.fifty = 0;
+    d.ply = 0;
+    d.hply = 0;
+    set_hash(d);
+    print_board(d);
+    d.max_time = 1 << 25;
+    d.max_depth = 5;
     for i in 0..3 {
-        think(1);
-        t[i] = (get_ms() - START_TIME) as Int;
+        think(d, 1);
+        t[i] = (get_ms() - d.start_time) as Int;
         println!("Time: {} ms", t[i]);
     }
     if t[1] < t[0] {
@@ -542,13 +553,13 @@ unsafe fn bench() {
         t[0] = t[2];
     }
     println!("");
-    println!("Nodes: {}", NODES);
+    println!("Nodes: {}", d.nodes);
     println!("Best time: {} ms", t[0]);
     if t[0] == 0 {
         println!("(invalid)");
         return;
     }
-    let nps = (NODES as f64) / (t[0] as f64);
+    let nps = (d.nodes as f64) / (t[0] as f64);
     let nps = nps * 1000.0;
 
     // Score: 1.00 = my Athlon XP 2000+
@@ -558,7 +569,7 @@ unsafe fn bench() {
         nps / 243169.0
     );
 
-    init_board();
+    init_board(d);
     open_book();
-    gen();
+    gen(d);
 }

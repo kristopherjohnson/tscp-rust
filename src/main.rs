@@ -8,5 +8,5 @@
 use tscp;
 
 fn main() {
-    tscp::process_commands();
+    tscp::tscp_main();
 }

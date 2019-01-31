@@ -7,11 +7,7 @@
 
 use crate::board::{gen, gen_caps, in_check, makemove, takeback};
 use crate::book::book_move;
-use crate::data::{
-    FIFTY, FIRST_MOVE, FOLLOW_PV, GEN_DAT, HASH, HISTORY, HIST_DAT, HPLY,
-    MAX_DEPTH, MAX_TIME, NODES, PLY, PV, PV_LENGTH, SIDE, START_TIME,
-    STOP_TIME,
-};
+use crate::data::Data;
 use crate::defs::{Int, Move, HIST_STACK, MAX_PLY};
 use crate::eval::eval;
 use crate::{get_ms, move_str};
@@ -35,50 +31,50 @@ enum SearchResult {
 // 1 = normal output
 // 2 = xboard format output
 
-pub unsafe fn think(output: Int) {
+pub unsafe fn think(d: &mut Data, output: Int) {
     // try the opening book first
-    PV[0][0].u = book_move();
-    if PV[0][0].u != -1 {
+    d.pv[0][0].u = book_move(&d);
+    if d.pv[0][0].u != -1 {
         return;
     }
 
     STOP_SEARCH = false;
-    START_TIME = get_ms();
-    STOP_TIME = START_TIME + MAX_TIME as u128;
+    d.start_time = get_ms();
+    d.stop_time = d.start_time + d.max_time as u128;
 
-    PLY = 0;
-    NODES = 0;
+    d.ply = 0;
+    d.nodes = 0;
 
-    PV = [[Move { u: 0 }; MAX_PLY]; MAX_PLY];
-    HISTORY = [[0; 64]; 64];
+    d.pv = [[Move { u: 0 }; MAX_PLY]; MAX_PLY];
+    d.history = [[0; 64]; 64];
     if output == 1 {
         println!("ply      nodes  score  pv");
     }
-    for i in 1..=MAX_DEPTH {
-        FOLLOW_PV = true;
-        match search(-10000, 10000, i) {
+    for i in 1..=d.max_depth {
+        d.follow_pv = true;
+        match search(d, -10000, 10000, i) {
             SearchResult::Timeout => {
                 // make sure to take back the line we were searching
-                while PLY != 0 {
-                    takeback();
+                while d.ply != 0 {
+                    takeback(d);
                 }
                 return;
             }
             SearchResult::Value(x) => {
                 if output == 1 {
-                    print!("{:3}  {:9}  {:5} ", i, NODES, x);
+                    print!("{:3}  {:9}  {:5} ", i, d.nodes, x);
                 } else if output == 2 {
                     print!(
                         "{} {} {} {}",
                         i,
                         x,
-                        (get_ms() - START_TIME) / 10,
-                        NODES
+                        (get_ms() - d.start_time) / 10,
+                        d.nodes
                     );
                 }
                 if output != 0 {
-                    for j in 0..PV_LENGTH[0] {
-                        print!(" {}", move_str(&PV[0][j].b));
+                    for j in 0..d.pv_length[0] {
+                        print!(" {}", move_str(d.pv[0][j].b));
                     }
                     print!("\n");
                     stdout().flush().expect("flush");
@@ -93,83 +89,88 @@ pub unsafe fn think(output: Int) {
 
 /// search() does just that, in negamax fashion
 
-unsafe fn search(alpha: Int, beta: Int, depth: Int) -> SearchResult {
+unsafe fn search(
+    d: &mut Data,
+    alpha: Int,
+    beta: Int,
+    depth: Int,
+) -> SearchResult {
     // we're as deep as we want to be; call quiesce() to get a reasonable score
     // and return it
     if depth == 0 {
-        return quiesce(alpha, beta);
+        return quiesce(d, alpha, beta);
     }
-    NODES += 1;
+    d.nodes += 1;
 
     // do some housekeeping every 1024 nodes
-    if (NODES & 1023) == 0 {
-        if !checkup() {
+    if (d.nodes & 1023) == 0 {
+        if !checkup(&d) {
             return SearchResult::Timeout;
         }
     }
 
-    PV_LENGTH[PLY] = PLY;
+    d.pv_length[d.ply] = d.ply;
 
     // if this isn't the root of the search tree (where we have to pick a move
     // and can't simply return 0) then check to see if the position is a repeat.
     // if so, we can assume that this line is a draw and return 0.
-    if PLY != 0 && reps() != 0 {
+    if d.ply != 0 && reps(&d) != 0 {
         return SearchResult::Value(0);
     }
 
     // are we too deep?
-    if PLY >= MAX_PLY - 1 {
-        return SearchResult::Value(eval());
+    if d.ply >= MAX_PLY - 1 {
+        return SearchResult::Value(eval(&d));
     }
-    if HPLY >= HIST_STACK - 1 {
-        return SearchResult::Value(eval());
+    if d.hply >= HIST_STACK - 1 {
+        return SearchResult::Value(eval(&d));
     }
 
     // are we in check? if so, we want to search deeper
     let mut depth = depth;
-    let c = in_check(SIDE);
+    let c = in_check(&d, d.side);
     if c {
         depth += 1;
     }
-    gen();
-    if FOLLOW_PV {
+    gen(d);
+    if d.follow_pv {
         // are we following the PV?
-        sort_pv();
+        sort_pv(d);
     }
     let mut f = false;
     let mut alpha = alpha;
     let mut x;
 
     // loop through the moves
-    for i in FIRST_MOVE[PLY]..FIRST_MOVE[PLY + 1] {
-        sort(i);
-        if !makemove(&GEN_DAT[i].m.b) {
+    for i in d.first_move[d.ply]..d.first_move[d.ply + 1] {
+        sort(d, i);
+        if !makemove(d, d.gen_dat[i].m.b) {
             continue;
         }
         f = true;
-        match search(-beta, -alpha, depth - 1) {
+        match search(d, -beta, -alpha, depth - 1) {
             SearchResult::Timeout => {
                 return SearchResult::Timeout;
             }
             SearchResult::Value(value) => {
                 x = -value;
-                takeback();
+                takeback(d);
                 if x > alpha {
                     // this move caused a cutoff, so increase the history value
                     // so it gets ordered high next time so we can search it
-                    HISTORY[GEN_DAT[i].m.b.from as usize]
-                        [GEN_DAT[i].m.b.to as usize] += depth;
+                    d.history[d.gen_dat[i].m.b.from as usize]
+                        [d.gen_dat[i].m.b.to as usize] += depth;
                     if x >= beta {
                         return SearchResult::Value(beta);
                     }
                     alpha = x;
 
                     // update the PV
-                    PV[PLY][PLY] = GEN_DAT[i].m;
-                    for j in (PLY + 1)..PV_LENGTH[PLY + 1] {
-                        PV[PLY][j] = PV[PLY + 1][j];
+                    d.pv[d.ply][d.ply] = d.gen_dat[i].m;
+                    for j in (d.ply + 1)..d.pv_length[d.ply + 1] {
+                        d.pv[d.ply][j] = d.pv[d.ply + 1][j];
                     }
-                    PV_LENGTH[PLY] = PV_LENGTH[PLY + 1];
+                    d.pv_length[d.ply] = d.pv_length[d.ply + 1];
                 }
             }
         }
@@ -178,13 +179,13 @@ unsafe fn search(alpha: Int, beta: Int, depth: Int) -> SearchResult {
     // no legal moves? then we're in checkmate or stalemate
     if !f {
         if c {
-            return SearchResult::Value(-10000 + (PLY as Int));
+            return SearchResult::Value(-10000 + (d.ply as Int));
         } else {
             return SearchResult::Value(0);
         }
     }
 
-    if FIFTY >= 100 {
+    if d.fifty >= 100 {
         return SearchResult::Value(0);
     }
 
@@ -197,28 +198,28 @@ unsafe fn search(alpha: Int, beta: Int, depth: Int) -> SearchResult {
 /// idea is to find a position where there isn't a lot going on so the static
 /// evaluation function will work.
 
-unsafe fn quiesce(alpha: Int, beta: Int) -> SearchResult {
-    NODES += 1;
+unsafe fn quiesce(d: &mut Data, alpha: Int, beta: Int) -> SearchResult {
+    d.nodes += 1;
 
     // do some housekeeping every 1024 nodes
-    if (NODES & 1023) == 0 {
-        if !checkup() {
+    if (d.nodes & 1023) == 0 {
+        if !checkup(&d) {
             return SearchResult::Timeout;
         }
     }
 
-    PV_LENGTH[PLY] = PLY;
+    d.pv_length[d.ply] = d.ply;
 
     // are we too deep?
-    if PLY >= MAX_PLY - 1 {
-        return SearchResult::Value(eval());
+    if d.ply >= MAX_PLY - 1 {
+        return SearchResult::Value(eval(&d));
     }
-    if HPLY >= HIST_STACK - 1 {
-        return SearchResult::Value(eval());
+    if d.hply >= HIST_STACK - 1 {
+        return SearchResult::Value(eval(&d));
     }
 
     // check with the evaluation function
-    let mut x = eval();
+    let mut x = eval(&d);
     if x >= beta {
         return SearchResult::Value(beta);
     }
@@ -227,25 +228,25 @@ unsafe fn quiesce(alpha: Int, beta: Int) -> SearchResult {
         alpha = x;
     }
 
-    gen_caps();
-    if FOLLOW_PV {
+    gen_caps(d);
+    if d.follow_pv {
         // are we following the PV?
-        sort_pv();
+        sort_pv(d);
     }
 
     // loop through the moves
-    for i in FIRST_MOVE[PLY]..FIRST_MOVE[PLY + 1] {
-        sort(i);
-        if !makemove(&GEN_DAT[i].m.b) {
+    for i in d.first_move[d.ply]..d.first_move[d.ply + 1] {
+        sort(d, i);
+        if !makemove(d, d.gen_dat[i].m.b) {
             continue;
         }
-        match quiesce(-beta, -alpha) {
+        match quiesce(d, -beta, -alpha) {
             SearchResult::Timeout => {
                 return SearchResult::Timeout;
             }
             SearchResult::Value(value) => {
                 x = -value;
-                takeback();
+                takeback(d);
                 if x > alpha {
                     if x >= beta {
                         return SearchResult::Value(beta);
@@ -253,11 +254,11 @@ unsafe fn quiesce(alpha: Int, beta: Int) -> SearchResult {
                     alpha = x;
 
                     // update the PV
-                    PV[PLY][PLY] = GEN_DAT[i].m;
-                    for j in (PLY + 1)..PV_LENGTH[PLY + 1] {
-                        PV[PLY][j] = PV[PLY + 1][j];
+                    d.pv[d.ply][d.ply] = d.gen_dat[i].m;
+                    for j in (d.ply + 1)..d.pv_length[d.ply + 1] {
+                        d.pv[d.ply][j] = d.pv[d.ply + 1][j];
                     }
-                    PV_LENGTH[PLY] = PV_LENGTH[PLY + 1];
+                    d.pv_length[d.ply] = d.pv_length[d.ply + 1];
                 }
             }
         }
@@ -268,10 +269,10 @@ unsafe fn quiesce(alpha: Int, beta: Int) -> SearchResult {
 /// reps() returns the number of times the current position has been repeated.
 /// It compares the current value of hash to previous values.
 
-pub unsafe fn reps() -> Int {
+pub unsafe fn reps(d: &Data) -> Int {
     let mut r = 0;
-    for i in (HPLY - FIFTY as usize)..HPLY {
-        if HIST_DAT[i].hash == HASH {
+    for i in (d.hply - d.fifty as usize)..d.hply {
+        if d.hist_dat[i].hash == d.hash {
             r += 1;
         }
     }
@@ -284,12 +285,12 @@ pub unsafe fn reps() -> Int {
 /// first by the search function. If not, follow_pv remains false and search()
 /// stops calling sort_pv().
 
-unsafe fn sort_pv() {
-    FOLLOW_PV = false;
-    for i in FIRST_MOVE[PLY]..FIRST_MOVE[PLY + 1] {
-        if GEN_DAT[i].m.u == PV[0][PLY].u {
-            FOLLOW_PV = true;
-            GEN_DAT[i].score += 10000000;
+unsafe fn sort_pv(d: &mut Data) {
+    d.follow_pv = false;
+    for i in d.first_move[d.ply]..d.first_move[d.ply + 1] {
+        if d.gen_dat[i].m.u == d.pv[0][d.ply].u {
+            d.follow_pv = true;
+            d.gen_dat[i].score += 10000000;
             return;
         }
     }
@@ -300,24 +301,26 @@ unsafe fn sort_pv() {
 /// so the move with the highest score gets searched next, and hopefully
 /// produces a cutoff.
 
-unsafe fn sort(from: usize) {
+unsafe fn sort(d: &mut Data, from: usize) {
     let mut bs = -1; // best score
     let mut bi = from; // best i
-    for i in from..FIRST_MOVE[PLY + 1] {
-        if GEN_DAT[i].score > bs {
-            bs = GEN_DAT[i].score;
+    for i in from..d.first_move[d.ply + 1] {
+        if d.gen_dat[i].score > bs {
+            bs = d.gen_dat[i].score;
             bi = i;
         }
     }
-    std::mem::swap(&mut GEN_DAT[from], &mut GEN_DAT[bi]);
+    let g = d.gen_dat[from];
+    d.gen_dat[from] = d.gen_dat[bi];
+    d.gen_dat[bi] = g;
 }
 
 // checkup() is called once in a while during the search. If it returns false,
 // the search time is up.
 
-unsafe fn checkup() -> bool {
+unsafe fn checkup(d: &Data) -> bool {
     // is the engine's time up? if so, unwind back to think()
-    if get_ms() >= STOP_TIME {
+    if get_ms() >= d.stop_time {
         STOP_SEARCH = true;
         return false;
     }

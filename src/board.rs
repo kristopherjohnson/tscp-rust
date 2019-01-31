@@ -6,53 +6,53 @@
 // Rust port by Kristopher Johnson
 
 use crate::data::{
-    CASTLE, CASTLE_MASK, COLOR, EP, FIFTY, FIRST_MOVE, GEN_DAT, HASH, HASH_EP,
-    HASH_PIECE, HASH_SIDE, HISTORY, HIST_DAT, HPLY, INIT_COLOR, INIT_PIECE,
-    MAILBOX, MAILBOX64, OFFSET, OFFSETS, PIECE, PLY, SIDE, SLIDE, XSIDE,
+    Data, CASTLE_MASK, INIT_COLOR, INIT_PIECE, MAILBOX, MAILBOX64, OFFSET,
+    OFFSETS, SLIDE,
 };
 use crate::defs::{
     Int, MoveBytes, A1, A8, B1, B8, C1, C8, D1, D8, DARK, E1, E8, EMPTY, F1,
     F8, G1, G8, H1, H8, KING, KNIGHT, LIGHT, PAWN, QUEEN, ROOK,
 };
 
-// #rust gen_push!(from, to, bits) coerces the arguments to the right types,
+// #rust gen_push!(d, from, to, bits) coerces the arguments to the right types,
 // avoiding the need for a lot of explicit "as usize" and "as u8" coercions in
 // calls to gen_push().
 macro_rules! gen_push {
-    ( $from:expr, $to:expr, $bits:expr ) => {
-        gen_push($from as usize, $to as usize, $bits as u8)
+    ( $dref:ident, $from:expr, $to:expr, $bits:expr ) => {
+        gen_push($dref, $from as usize, $to as usize, $bits as u8)
     };
 }
 
 /// init_board() sets the board to the initial game state.
-pub unsafe fn init_board() {
-    COLOR.copy_from_slice(&INIT_COLOR);
-    PIECE.copy_from_slice(&INIT_PIECE);
-    SIDE = LIGHT;
-    XSIDE = DARK;
-    CASTLE = 15;
-    EP = -1;
-    FIFTY = 0;
-    PLY = 0;
-    HPLY = 0;
-    set_hash(); // init_hash() must be called
-    FIRST_MOVE[0] = 0;
+
+pub unsafe fn init_board(d: &mut Data) {
+    d.color.copy_from_slice(&INIT_COLOR);
+    d.piece.copy_from_slice(&INIT_PIECE);
+    d.side = LIGHT;
+    d.xside = DARK;
+    d.castle = 15;
+    d.ep = -1;
+    d.fifty = 0;
+    d.ply = 0;
+    d.hply = 0;
+    set_hash(d); // init_hash() must be called
+    d.first_move[0] = 0;
 }
 
 /// init_hash() initializes the random numbers used by set_hash().
 
-pub unsafe fn init_hash() {
+pub unsafe fn init_hash(d: &mut Data) {
     libc::srand(0);
     for i in 0..2 {
         for j in 0..6 {
             for k in 0..64 {
-                HASH_PIECE[i][j][k] = hash_rand();
+                d.hash_piece[i][j][k] = hash_rand();
             }
         }
     }
-    HASH_SIDE = hash_rand();
-    for i in 0..HASH_EP.len() {
-        HASH_EP[i] = hash_rand();
+    d.hash_side = hash_rand();
+    for i in 0..64 {
+        d.hash_ep[i] = hash_rand();
     }
 }
 
@@ -79,19 +79,19 @@ unsafe fn hash_rand() -> Int {
 /// XORed if there is one. (A chess technicality is that one position can't
 /// be a repetition of another if the en passant state is different.)
 
-pub unsafe fn set_hash() {
-    HASH = 0;
-    for i in 0..COLOR.len() {
-        if COLOR[i] != EMPTY {
-            HASH ^=
-                HASH_PIECE[COLOR[i] as usize][PIECE[i] as usize][i as usize];
+pub unsafe fn set_hash(d: &mut Data) {
+    d.hash = 0;
+    for i in 0..64 {
+        if d.color[i] != EMPTY {
+            d.hash ^= d.hash_piece[d.color[i] as usize][d.piece[i] as usize]
+                [i as usize];
         }
     }
-    if SIDE == DARK {
-        HASH ^= HASH_SIDE;
+    if d.side == DARK {
+        d.hash ^= d.hash_side;
     }
-    if EP != -1 {
-        HASH ^= HASH_EP[EP as usize];
+    if d.ep != -1 {
+        d.hash ^= d.hash_ep[d.ep as usize];
     }
 }
 
@@ -99,10 +99,10 @@ pub unsafe fn set_hash() {
 /// scans the board to find side s's king and calls attack() to see if it's
 /// being attacked.
 
-pub unsafe fn in_check(s: Int) -> bool {
-    for i in 0..PIECE.len() {
-        if PIECE[i] == KING && COLOR[i] == s {
-            return attack(i, s ^ 1);
+pub unsafe fn in_check(d: &Data, s: Int) -> bool {
+    for i in 0..64 {
+        if d.piece[i] == KING && d.color[i] == s {
+            return attack(&d, i, s ^ 1);
         }
     }
     panic!("in_check: shouldn't get here");
@@ -111,10 +111,10 @@ pub unsafe fn in_check(s: Int) -> bool {
 /// attack() returns true if square sq is being attacked by side s and false
 /// otherwise.
 
-unsafe fn attack(sq: usize, s: Int) -> bool {
-    for i in 0..COLOR.len() {
-        if COLOR[i] == s {
-            if PIECE[i] == PAWN {
+unsafe fn attack(d: &Data, sq: usize, s: Int) -> bool {
+    for i in 0..64 {
+        if d.color[i] == s {
+            if d.piece[i] == PAWN {
                 if s == LIGHT {
                     if col!(i) != 0 && i - 9 == sq {
                         return true;
@@ -131,11 +131,11 @@ unsafe fn attack(sq: usize, s: Int) -> bool {
                     }
                 }
             } else {
-                for j in 0..(OFFSETS[PIECE[i] as usize] as usize) {
+                for j in 0..(OFFSETS[d.piece[i] as usize] as usize) {
                     let mut n = i as Int;
                     loop {
                         let m64 = MAILBOX64[n as usize];
-                        let offset = OFFSET[PIECE[i] as usize][j];
+                        let offset = OFFSET[d.piece[i] as usize][j];
                         n = MAILBOX[(m64 + offset) as usize];
                         if n == -1 {
                             break;
@@ -143,10 +143,10 @@ unsafe fn attack(sq: usize, s: Int) -> bool {
                         if n as usize == sq {
                             return true;
                         }
-                        if COLOR[n as usize] != EMPTY {
+                        if d.color[n as usize] != EMPTY {
                             break;
                         }
-                        if !SLIDE[PIECE[i] as usize] {
+                        if !SLIDE[d.piece[i] as usize] {
                             break;
                         }
                     }
@@ -162,59 +162,59 @@ unsafe fn attack(sq: usize, s: Int) -> bool {
 /// When it finds a piece/square combination, it calls gen_push to put the move
 /// on the "move stack."
 
-pub unsafe fn gen() {
+pub unsafe fn gen(d: &mut Data) {
     // so far, we have no moves for the current ply
-    FIRST_MOVE[PLY + 1] = FIRST_MOVE[PLY];
+    d.first_move[d.ply + 1] = d.first_move[d.ply];
 
     for i in 0..64 {
-        if COLOR[i] == SIDE {
-            if PIECE[i] == PAWN {
-                if SIDE == LIGHT {
-                    if col!(i) != 0 && COLOR[i - 9] == DARK {
-                        gen_push!(i, i - 9, 17);
+        if d.color[i] == d.side {
+            if d.piece[i] == PAWN {
+                if d.side == LIGHT {
+                    if col!(i) != 0 && d.color[i - 9] == DARK {
+                        gen_push!(d, i, i - 9, 17);
                     }
-                    if col!(i) != 7 && COLOR[i - 7] == DARK {
-                        gen_push!(i, i - 7, 17);
+                    if col!(i) != 7 && d.color[i - 7] == DARK {
+                        gen_push!(d, i, i - 7, 17);
                     }
-                    if COLOR[i - 8] == EMPTY {
-                        gen_push!(i, i - 8, 16);
-                        if i >= 48 && COLOR[i - 16] == EMPTY {
-                            gen_push!(i, i - 16, 24);
+                    if d.color[i - 8] == EMPTY {
+                        gen_push!(d, i, i - 8, 16);
+                        if i >= 48 && d.color[i - 16] == EMPTY {
+                            gen_push!(d, i, i - 16, 24);
                         }
                     }
                 } else {
-                    if col!(i) != 0 && COLOR[i + 7] == LIGHT {
-                        gen_push!(i, i + 7, 17);
+                    if col!(i) != 0 && d.color[i + 7] == LIGHT {
+                        gen_push!(d, i, i + 7, 17);
                     }
-                    if col!(i) != 7 && COLOR[i + 9] == LIGHT {
-                        gen_push!(i, i + 9, 17);
+                    if col!(i) != 7 && d.color[i + 9] == LIGHT {
+                        gen_push!(d, i, i + 9, 17);
                     }
-                    if COLOR[i + 8] == EMPTY {
-                        gen_push!(i, i + 8, 16);
-                        if i <= 15 && COLOR[i + 16] == EMPTY {
-                            gen_push!(i, i + 16, 24);
+                    if d.color[i + 8] == EMPTY {
+                        gen_push!(d, i, i + 8, 16);
+                        if i <= 15 && d.color[i + 16] == EMPTY {
+                            gen_push!(d, i, i + 16, 24);
                         }
                     }
                 }
             } else {
-                for j in 0..(OFFSETS[PIECE[i] as usize] as usize) {
+                for j in 0..(OFFSETS[d.piece[i] as usize] as usize) {
                     let mut n = i as i32;
                     loop {
                         let m64 = MAILBOX64[n as usize];
-                        let offset = OFFSET[PIECE[i] as usize][j];
+                        let offset = OFFSET[d.piece[i] as usize][j];
                         n = MAILBOX[(m64 + offset) as usize];
                         if n == -1 {
                             break;
                         }
-                        let color = COLOR[n as usize];
+                        let color = d.color[n as usize];
                         if color != EMPTY {
-                            if color == XSIDE {
-                                gen_push!(i, n, 1);
+                            if color == d.xside {
+                                gen_push!(d, i, n, 1);
                             }
                             break;
                         }
-                        gen_push!(i, n, 0);
-                        if !SLIDE[PIECE[i] as usize] {
+                        gen_push!(d, i, n, 0);
+                        if !SLIDE[d.piece[i] as usize] {
                             break;
                         }
                     }
@@ -224,52 +224,52 @@ pub unsafe fn gen() {
     }
 
     // generate castle moves
-    if SIDE == LIGHT {
-        if (CASTLE & 1) != 0 {
-            gen_push!(E1, G1, 2);
+    if d.side == LIGHT {
+        if (d.castle & 1) != 0 {
+            gen_push!(d, E1, G1, 2);
         }
-        if (CASTLE & 2) != 0 {
-            gen_push!(E1, C1, 2);
+        if (d.castle & 2) != 0 {
+            gen_push!(d, E1, C1, 2);
         }
     } else {
-        if (CASTLE & 4) != 0 {
-            gen_push!(E8, G8, 2);
+        if (d.castle & 4) != 0 {
+            gen_push!(d, E8, G8, 2);
         }
-        if (CASTLE & 8) != 0 {
-            gen_push!(E8, C8, 2);
+        if (d.castle & 8) != 0 {
+            gen_push!(d, E8, C8, 2);
         }
     }
 
     // generate en passant moves
-    if EP != -1 {
+    if d.ep != -1 {
         // #rust TODO Maybe there is a better way to avoid a bunch of "as usize"
         // casts in the expressions below.
-        let i_ep = EP as usize;
-        if SIDE == LIGHT {
-            if col!(EP) != 0
-                && COLOR[i_ep + 7] == LIGHT
-                && PIECE[i_ep + 7] == PAWN
+        let i_ep = d.ep as usize;
+        if d.side == LIGHT {
+            if col!(d.ep) != 0
+                && d.color[i_ep + 7] == LIGHT
+                && d.piece[i_ep + 7] == PAWN
             {
-                gen_push!(EP + 7, EP, 21);
+                gen_push!(d, d.ep + 7, d.ep, 21);
             }
-            if col!(EP) != 7
-                && COLOR[i_ep + 9] == LIGHT
-                && PIECE[i_ep + 9] == PAWN
+            if col!(d.ep) != 7
+                && d.color[i_ep + 9] == LIGHT
+                && d.piece[i_ep + 9] == PAWN
             {
-                gen_push!(EP + 9, EP, 21);
+                gen_push!(d, d.ep + 9, d.ep, 21);
             }
         } else {
-            if col!(EP) != 0
-                && COLOR[i_ep - 9] == DARK
-                && PIECE[i_ep - 9] == PAWN
+            if col!(d.ep) != 0
+                && d.color[i_ep - 9] == DARK
+                && d.piece[i_ep - 9] == PAWN
             {
-                gen_push!(EP - 9, EP, 21);
+                gen_push!(d, d.ep - 9, d.ep, 21);
             }
-            if col!(EP) != 7
-                && COLOR[i_ep - 7] == DARK
-                && PIECE[i_ep - 7] == PAWN
+            if col!(d.ep) != 7
+                && d.color[i_ep - 7] == DARK
+                && d.piece[i_ep - 7] == PAWN
             {
-                gen_push!(EP - 7, EP, 21);
+                gen_push!(d, d.ep - 7, d.ep, 21);
             }
         }
     }
@@ -278,51 +278,51 @@ pub unsafe fn gen() {
 /// gen_caps() is basically a copy of gen() that's modified to only generate
 /// capture and promote moves. It's used by the quiescence search.
 
-pub unsafe fn gen_caps() {
-    FIRST_MOVE[PLY + 1] = FIRST_MOVE[PLY];
+pub unsafe fn gen_caps(d: &mut Data) {
+    d.first_move[d.ply + 1] = d.first_move[d.ply];
     for i in 0..64 {
-        if COLOR[i] == SIDE {
-            if PIECE[i] == PAWN {
-                if SIDE == LIGHT {
-                    if col!(i) != 0 && COLOR[i - 9] == DARK {
-                        gen_push!(i, i - 9, 17);
+        if d.color[i] == d.side {
+            if d.piece[i] == PAWN {
+                if d.side == LIGHT {
+                    if col!(i) != 0 && d.color[i - 9] == DARK {
+                        gen_push!(d, i, i - 9, 17);
                     }
-                    if col!(i) != 7 && COLOR[i - 7] == DARK {
-                        gen_push!(i, i - 7, 17);
+                    if col!(i) != 7 && d.color[i - 7] == DARK {
+                        gen_push!(d, i, i - 7, 17);
                     }
-                    if i <= 15 && COLOR[i - 8] == EMPTY {
-                        gen_push!(i, i - 8, 16);
+                    if i <= 15 && d.color[i - 8] == EMPTY {
+                        gen_push!(d, i, i - 8, 16);
                     }
                 }
-                if SIDE == DARK {
-                    if col!(i) != 0 && COLOR[i + 7] == LIGHT {
-                        gen_push!(i, i + 7, 17);
+                if d.side == DARK {
+                    if col!(i) != 0 && d.color[i + 7] == LIGHT {
+                        gen_push!(d, i, i + 7, 17);
                     }
-                    if col!(i) != 7 && COLOR[i + 9] == LIGHT {
-                        gen_push!(i, i + 9, 17);
+                    if col!(i) != 7 && d.color[i + 9] == LIGHT {
+                        gen_push!(d, i, i + 9, 17);
                     }
-                    if i >= 48 && COLOR[i + 8] == EMPTY {
-                        gen_push!(i, i + 8, 16);
+                    if i >= 48 && d.color[i + 8] == EMPTY {
+                        gen_push!(d, i, i + 8, 16);
                     }
                 }
             } else {
-                for j in 0..(OFFSETS[PIECE[i] as usize] as usize) {
+                for j in 0..(OFFSETS[d.piece[i] as usize] as usize) {
                     let mut n = i as i32;
                     loop {
                         let m64 = MAILBOX64[n as usize];
-                        let offset = OFFSET[PIECE[i] as usize][j];
+                        let offset = OFFSET[d.piece[i] as usize][j];
                         n = MAILBOX[(m64 + offset) as usize];
                         if n == -1 {
                             break;
                         }
-                        let color = COLOR[n as usize];
+                        let color = d.color[n as usize];
                         if color != EMPTY {
-                            if color == XSIDE {
-                                gen_push!(i, n, 1);
+                            if color == d.xside {
+                                gen_push!(d, i, n, 1);
                             }
                             break;
                         }
-                        if !SLIDE[PIECE[i] as usize] {
+                        if !SLIDE[d.piece[i] as usize] {
                             break;
                         }
                     }
@@ -331,35 +331,35 @@ pub unsafe fn gen_caps() {
         }
     }
 
-    if EP != -1 {
+    if d.ep != -1 {
         // #rust TODO Maybe there is a better way to avoid a bunch of "as usize"
         // casts in the expressions below.
-        let i_ep = EP as usize;
-        if SIDE == LIGHT {
-            if col!(EP) != 0
-                && COLOR[i_ep + 7] == LIGHT
-                && PIECE[i_ep + 7] == PAWN
+        let i_ep = d.ep as usize;
+        if d.side == LIGHT {
+            if col!(d.ep) != 0
+                && d.color[i_ep + 7] == LIGHT
+                && d.piece[i_ep + 7] == PAWN
             {
-                gen_push!(EP + 7, EP, 21);
+                gen_push!(d, d.ep + 7, d.ep, 21);
             }
-            if col!(EP) != 7
-                && COLOR[i_ep + 9] == LIGHT
-                && PIECE[i_ep + 9] == PAWN
+            if col!(d.ep) != 7
+                && d.color[i_ep + 9] == LIGHT
+                && d.piece[i_ep + 9] == PAWN
             {
-                gen_push!(EP + 9, EP, 21);
+                gen_push!(d, d.ep + 9, d.ep, 21);
             }
         } else {
-            if col!(EP) != 0
-                && COLOR[i_ep - 9] == DARK
-                && PIECE[i_ep - 9] == PAWN
+            if col!(d.ep) != 0
+                && d.color[i_ep - 9] == DARK
+                && d.piece[i_ep - 9] == PAWN
             {
-                gen_push!(EP - 9, EP, 21);
+                gen_push!(d, d.ep - 9, d.ep, 21);
             }
-            if col!(EP) != 7
-                && COLOR[i_ep - 7] == DARK
-                && PIECE[i_ep - 7] == PAWN
+            if col!(d.ep) != 7
+                && d.color[i_ep - 7] == DARK
+                && d.piece[i_ep - 7] == PAWN
             {
-                gen_push!(EP - 7, EP, 21);
+                gen_push!(d, d.ep - 7, d.ep, 21);
             }
         }
     }
@@ -372,40 +372,40 @@ pub unsafe fn gen_caps() {
 /// move's history heuristic value. Note that 1,000,000 is added to a capture
 /// move's score, so it always gets ordered above a "normal" move. */
 
-unsafe fn gen_push(from: usize, to: usize, bits: u8) {
+unsafe fn gen_push(d: &mut Data, from: usize, to: usize, bits: u8) {
     if (bits & 16) != 0 {
-        if SIDE == LIGHT {
+        if d.side == LIGHT {
             if to <= H8 {
-                gen_promote(from, to, bits);
+                gen_promote(d, from, to, bits);
                 return;
             }
         } else {
             if to >= A1 {
-                gen_promote(from, to, bits);
+                gen_promote(d, from, to, bits);
                 return;
             }
         }
     }
-    let g = &mut GEN_DAT[FIRST_MOVE[PLY + 1] as usize];
-    FIRST_MOVE[PLY + 1] += 1;
+    let g = &mut d.gen_dat[d.first_move[d.ply + 1] as usize];
+    d.first_move[d.ply + 1] += 1;
     g.m.b.from = from as u8;
     g.m.b.to = to as u8;
     g.m.b.promote = 0;
     g.m.b.bits = bits;
-    if COLOR[to] != EMPTY {
-        g.score = 1000000 + PIECE[to] * 10 - PIECE[from];
+    if d.color[to] != EMPTY {
+        g.score = 1000000 + d.piece[to] * 10 - d.piece[from];
     } else {
-        g.score = HISTORY[from][to];
+        g.score = d.history[from][to];
     }
 }
 
 /// gen_promote() is just like gen_push(), only it puts 4 moves on the move
 /// stack, one for each possible promotion piece
 
-unsafe fn gen_promote(from: usize, to: usize, bits: u8) {
+unsafe fn gen_promote(d: &mut Data, from: usize, to: usize, bits: u8) {
     for i in KNIGHT..=QUEEN {
-        let g = &mut GEN_DAT[FIRST_MOVE[PLY + 1] as usize];
-        FIRST_MOVE[PLY + 1] += 1;
+        let g = &mut d.gen_dat[d.first_move[d.ply + 1] as usize];
+        d.first_move[d.ply + 1] += 1;
         g.m.b.from = from as u8;
         g.m.b.to = to as u8;
         g.m.b.promote = i as u8;
@@ -418,22 +418,22 @@ unsafe fn gen_promote(from: usize, to: usize, bits: u8) {
 /// undoes whatever it did and returns FALSE. Otherwise, it
 /// returns TRUE.
 
-pub unsafe fn makemove(m: &MoveBytes) -> bool {
+pub unsafe fn makemove(d: &mut Data, m: MoveBytes) -> bool {
     let from: usize;
     let to: usize;
 
     // test to see if a castle move is legal and move the rook (the king is
     // moved with the usual move code later)
     if (m.bits & 2) != 0 {
-        if in_check(SIDE) {
+        if in_check(&d, d.side) {
             return false;
         }
         match m.to {
             62 => {
-                if COLOR[F1] != EMPTY
-                    || COLOR[G1] != EMPTY
-                    || attack(F1, XSIDE)
-                    || attack(G1, XSIDE)
+                if d.color[F1] != EMPTY
+                    || d.color[G1] != EMPTY
+                    || attack(&d, F1, d.xside)
+                    || attack(&d, G1, d.xside)
                 {
                     return false;
                 }
@@ -441,11 +441,11 @@ pub unsafe fn makemove(m: &MoveBytes) -> bool {
                 to = F1;
             }
             58 => {
-                if COLOR[B1] != EMPTY
-                    || COLOR[C1] != EMPTY
-                    || COLOR[D1] != EMPTY
-                    || attack(C1, XSIDE)
-                    || attack(D1, XSIDE)
+                if d.color[B1] != EMPTY
+                    || d.color[C1] != EMPTY
+                    || d.color[D1] != EMPTY
+                    || attack(&d, C1, d.xside)
+                    || attack(&d, D1, d.xside)
                 {
                     return false;
                 }
@@ -453,10 +453,10 @@ pub unsafe fn makemove(m: &MoveBytes) -> bool {
                 to = D1;
             }
             6 => {
-                if COLOR[F8] != EMPTY
-                    || COLOR[G8] != EMPTY
-                    || attack(F8, XSIDE)
-                    || attack(G8, XSIDE)
+                if d.color[F8] != EMPTY
+                    || d.color[G8] != EMPTY
+                    || attack(&d, F8, d.xside)
+                    || attack(&d, G8, d.xside)
                 {
                     return false;
                 }
@@ -464,11 +464,11 @@ pub unsafe fn makemove(m: &MoveBytes) -> bool {
                 to = F8;
             }
             2 => {
-                if COLOR[B8] != EMPTY
-                    || COLOR[C8] != EMPTY
-                    || COLOR[D8] != EMPTY
-                    || attack(C8, XSIDE)
-                    || attack(D8, XSIDE)
+                if d.color[B8] != EMPTY
+                    || d.color[C8] != EMPTY
+                    || d.color[D8] != EMPTY
+                    || attack(&d, C8, d.xside)
+                    || attack(&d, D8, d.xside)
                 {
                     return false;
                 }
@@ -479,92 +479,93 @@ pub unsafe fn makemove(m: &MoveBytes) -> bool {
                 panic!("makemove: invalid castling move");
             }
         }
-        COLOR[to] = COLOR[from];
-        PIECE[to] = PIECE[from];
-        COLOR[from] = EMPTY;
-        PIECE[from] = EMPTY;
+        d.color[to] = d.color[from];
+        d.piece[to] = d.piece[from];
+        d.color[from] = EMPTY;
+        d.piece[from] = EMPTY;
     }
 
     // back up information so we can take the move back later.
-    HIST_DAT[HPLY].m.b = *m;
-    HIST_DAT[HPLY].capture = PIECE[m.to as usize];
-    HIST_DAT[HPLY].castle = CASTLE;
-    HIST_DAT[HPLY].ep = EP;
-    HIST_DAT[HPLY].fifty = FIFTY;
-    HIST_DAT[HPLY].hash = HASH;
-    PLY += 1;
-    HPLY += 1;
+    d.hist_dat[d.hply].m.b = m;
+    d.hist_dat[d.hply].capture = d.piece[m.to as usize];
+    d.hist_dat[d.hply].castle = d.castle;
+    d.hist_dat[d.hply].ep = d.ep;
+    d.hist_dat[d.hply].fifty = d.fifty;
+    d.hist_dat[d.hply].hash = d.hash;
+    d.ply += 1;
+    d.hply += 1;
 
     // update the castle, en passant, and fifty-move-draw variables
-    CASTLE &= CASTLE_MASK[m.from as usize] & CASTLE_MASK[m.to as usize];
+    d.castle &= CASTLE_MASK[m.from as usize] & CASTLE_MASK[m.to as usize];
     if (m.bits & 8) != 0 {
-        if SIDE == LIGHT {
-            EP = m.to as Int + 8;
+        if d.side == LIGHT {
+            d.ep = m.to as Int + 8;
         } else {
-            EP = m.to as Int - 8;
+            d.ep = m.to as Int - 8;
         }
     } else {
-        EP = -1;
+        d.ep = -1;
     }
     if (m.bits & 17) != 0 {
-        FIFTY = 0;
+        d.fifty = 0;
     } else {
-        FIFTY += 1;
+        d.fifty += 1;
     }
 
     // move the piece
-    COLOR[m.to as usize] = SIDE;
+    d.color[m.to as usize] = d.side;
     if (m.bits & 32) != 0 {
-        PIECE[m.to as usize] = m.promote as Int;
+        d.piece[m.to as usize] = m.promote as Int;
     } else {
-        PIECE[m.to as usize] = PIECE[m.from as usize];
+        d.piece[m.to as usize] = d.piece[m.from as usize];
     }
-    COLOR[m.from as usize] = EMPTY;
-    PIECE[m.from as usize] = EMPTY;
+    d.color[m.from as usize] = EMPTY;
+    d.piece[m.from as usize] = EMPTY;
 
     // erase the pawn if this is an en passant move
     if (m.bits & 4) != 0 {
-        let pawn_sq = if SIDE == LIGHT { m.to + 8 } else { m.to - 8 } as usize;
-        COLOR[pawn_sq] = EMPTY;
-        PIECE[pawn_sq] = EMPTY;
+        let pawn_sq =
+            if d.side == LIGHT { m.to + 8 } else { m.to - 8 } as usize;
+        d.color[pawn_sq] = EMPTY;
+        d.piece[pawn_sq] = EMPTY;
     }
 
     // switch sides and test for legality (if we can capture the other guy's
     // king, it's an illegal position and we need to take the move back)
-    SIDE ^= 1;
-    XSIDE ^= 1;
-    if in_check(XSIDE) {
-        takeback();
+    d.side ^= 1;
+    d.xside ^= 1;
+    if in_check(&d, d.xside) {
+        takeback(d);
         return false;
     }
-    set_hash();
+    set_hash(d);
     true
 }
 
 /// takeback() is very similar to makemove(), only backwards :)
 
-pub unsafe fn takeback() {
-    SIDE ^= 1;
-    XSIDE ^= 1;
-    PLY -= 1;
-    HPLY -= 1;
-    let m = HIST_DAT[HPLY].m.b;
-    CASTLE = HIST_DAT[HPLY].castle;
-    EP = HIST_DAT[HPLY].ep;
-    FIFTY = HIST_DAT[HPLY].fifty;
-    HASH = HIST_DAT[HPLY].hash;
-    COLOR[m.from as usize] = SIDE;
+pub unsafe fn takeback(d: &mut Data) {
+    d.side ^= 1;
+    d.xside ^= 1;
+    d.ply -= 1;
+    d.hply -= 1;
+    let m = d.hist_dat[d.hply].m.b;
+    d.castle = d.hist_dat[d.hply].castle;
+    d.ep = d.hist_dat[d.hply].ep;
+    d.fifty = d.hist_dat[d.hply].fifty;
+    d.hash = d.hist_dat[d.hply].hash;
+    d.color[m.from as usize] = d.side;
     if (m.bits & 32) != 0 {
-        PIECE[m.from as usize] = PAWN;
+        d.piece[m.from as usize] = PAWN;
     } else {
-        PIECE[m.from as usize] = PIECE[m.to as usize];
+        d.piece[m.from as usize] = d.piece[m.to as usize];
     }
-    if HIST_DAT[HPLY].capture == EMPTY {
-        COLOR[m.to as usize] = EMPTY;
-        PIECE[m.to as usize] = EMPTY;
+    if d.hist_dat[d.hply].capture == EMPTY {
+        d.color[m.to as usize] = EMPTY;
+        d.piece[m.to as usize] = EMPTY;
     } else {
-        COLOR[m.to as usize] = XSIDE;
-        PIECE[m.to as usize] = HIST_DAT[HPLY].capture;
+        d.color[m.to as usize] = d.xside;
+        d.piece[m.to as usize] = d.hist_dat[d.hply].capture;
     }
     if (m.bits & 2) != 0 {
         let from: usize;
@@ -588,14 +589,15 @@ pub unsafe fn takeback() {
             }
             _ => panic!("takeback: invalid castling move"),
         }
-        COLOR[to] = SIDE;
-        PIECE[to] = ROOK;
-        COLOR[from] = EMPTY;
-        PIECE[from] = EMPTY;
+        d.color[to] = d.side;
+        d.piece[to] = ROOK;
+        d.color[from] = EMPTY;
+        d.piece[from] = EMPTY;
     }
     if (m.bits & 4) != 0 {
-        let pawn_sq = if SIDE == LIGHT { m.to + 8 } else { m.to - 8 } as usize;
-        COLOR[pawn_sq] = XSIDE;
-        PIECE[pawn_sq] = PAWN;
+        let pawn_sq =
+            if d.side == LIGHT { m.to + 8 } else { m.to - 8 } as usize;
+        d.color[pawn_sq] = d.xside;
+        d.piece[pawn_sq] = PAWN;
     }
 }

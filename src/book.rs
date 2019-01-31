@@ -10,7 +10,7 @@ use std::io::prelude::*;
 use std::io::BufReader;
 use std::ptr;
 
-use crate::data::{GEN_DAT, HIST_DAT, HPLY};
+use crate::data::Data;
 use crate::defs::Int;
 use crate::{move_str, parse_move};
 
@@ -54,8 +54,8 @@ pub unsafe fn close_book() {
 /// book_move() returns a book move (in integer format) or -1 if there is no
 /// book move.
 
-pub unsafe fn book_move() -> Int {
-    if HPLY > 25 {
+pub unsafe fn book_move(d: &Data) -> Int {
+    if d.hply > 25 {
         return -1;
     }
 
@@ -74,8 +74,8 @@ pub unsafe fn book_move() -> Int {
     // line is a string with the current line, e.g., "e2e4 e7e5 g1f3 "
     let mut line = String::from("");
     let mut j: Int;
-    for i in 0..HPLY {
-        line = line + &format!("{} ", move_str(&HIST_DAT[i].m.b));
+    for i in 0..d.hply {
+        line = line + &format!("{} ", move_str(d.hist_dat[i].m.b));
     }
 
     // compare line to each line in the opening book
@@ -85,11 +85,11 @@ pub unsafe fn book_move() -> Int {
         // starts_with() method.
         if book_line.starts_with(&line) {
             // parse the book move that continues the line
-            let m = parse_move(&book_line[line.len()..]);
+            let m = parse_move(&d, &book_line[line.len()..]);
             if m == -1 {
                 continue;
             }
-            let m = GEN_DAT[m as usize].m.u;
+            let m = d.gen_dat[m as usize].m.u;
 
             // add the book move to the move list, or update the move's count
             j = 0;

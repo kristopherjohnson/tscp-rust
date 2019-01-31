@@ -5,95 +5,130 @@
 //
 // Rust port by Kristopher Johnson
 
-use crate::defs::{Gen, Hist, Int, Move, GEN_STACK, HIST_STACK, MAX_PLY};
+use crate::defs::{
+    Gen, Hist, Int, Move, DARK, GEN_STACK, HIST_STACK, LIGHT, MAX_PLY,
+};
 
-// #rust: The members of this module correspond to global variables in the
-// original C code.  In Rust, we usually avoid static mutable variables because
-// any use of them is "unsafe".  So as this port evolves, the data members
-// should be encapsulated in structs that are passed around to the functions
-// that operate on them.
+// #rustc In the original C code, all the elements of the Data struct below are
+// global variables.  In Rust, we wrap them all in a struct so that we don't
+// have to treat them as "unsafe" static mutable data.
 
-// the board representation
+/// the board representation
 
-/// LIGHT, DARK, or EMPTY
-pub static mut COLOR: [Int; 64] = [0; 64];
+pub struct Data {
+    /// LIGHT, DARK, or EMPTY
+    pub color: [Int; 64],
 
-/// PAWN, KNIGHT, BISHOP, ROOK, QUEEN, KING, or EMPTY
-pub static mut PIECE: [Int; 64] = [0; 64];
+    /// PAWN, KNIGHT, BISHOP, ROOK, QUEEN, KING, or EMPTY
+    pub piece: [Int; 64],
 
-/// the side to move
-pub static mut SIDE: Int = 0;
+    /// the side to move
+    pub side: Int,
 
-/// the side not to move
-pub static mut XSIDE: Int = 0;
+    /// the side not to move
+    pub xside: Int,
 
-/// a bitfield with the castle permissions. if 1 is set, white can still castle
-/// kingside. 2 is white queenside.  4 is black kingside. 8 is black queenside.
-pub static mut CASTLE: Int = 0;
+    /// a bitfield with the castle permissions. if 1 is set, white can still
+    /// castle kingside. 2 is white queenside.  4 is black kingside. 8 is black
+    /// queenside.
+    pub castle: Int,
 
-/// the en passant square. if white moves e2e4, the en passant square is set to
-/// e3, because that's where a pawn would move in an en passant capture
-pub static mut EP: Int = 0;
+    /// the en passant square. if white moves e2e4, the en passant square is set
+    /// to e3, because that's where a pawn would move in an en passant capture
+    pub ep: Int,
 
-/// the number of moves since a capture or pawn move, used to handle the
-/// fifty-move-draw rule
-pub static mut FIFTY: Int = 0;
+    /// the number of moves since a capture or pawn move, used to handle the
+    /// fifty-move-draw rule
+    pub fifty: Int,
 
-/// a (more or less) unique number that corresponds to the position
-pub static mut HASH: Int = 0;
+    /// a (more or less) unique number that corresponds to the position
+    pub hash: Int,
 
-/// the number of half-moves (ply) since the root of the search tree
-pub static mut PLY: usize = 0;
+    /// the number of half-moves (ply) since the root of the search tree
+    pub ply: usize,
 
-/// h for history; the number of ply since the beginning of the game
-pub static mut HPLY: usize = 0;
+    /// h for history; the number of ply since the beginning of the game
+    pub hply: usize,
 
-/// GEN_DAT is some memory for move lists that are created by the move
-/// generators. The move list for ply n starts at FIRST_MOVE[n] and ends at
-/// FIRST_MOVE[n + 1].
-pub static mut GEN_DAT: [Gen; GEN_STACK] = [Gen {
-    m: Move { u: 0 },
-    score: 0,
-}; GEN_STACK];
-pub static mut FIRST_MOVE: [usize; MAX_PLY] = [0; MAX_PLY];
+    /// GEN_DAT is some memory for move lists that are created by the move
+    /// generators. The move list for ply n starts at FIRST_MOVE[n] and ends at
+    /// FIRST_MOVE[n + 1].
+    pub gen_dat: [Gen; GEN_STACK],
+    pub first_move: [usize; MAX_PLY],
 
-/// the history heuristic array (used for move ordering)
-pub static mut HISTORY: [[Int; 64]; 64] = [[0; 64]; 64];
+    /// the history heuristic array (used for move ordering)
+    pub history: [[Int; 64]; 64],
 
-/// we need an array of hist_t's so we can take back the moves we make
-pub static mut HIST_DAT: [Hist; HIST_STACK] = [Hist {
-    m: Move { u: 0 },
-    capture: 0,
-    castle: 0,
-    ep: 0,
-    fifty: 0,
-    hash: 0,
-}; HIST_STACK];
+    /// we need an array of hist_t's so we can take back the moves we make
+    pub hist_dat: [Hist; HIST_STACK],
+    /// the engine will search for max_time milliseconds or until it finishes
+    /// searching max_depth ply.
+    pub max_time: Int,
+    pub max_depth: Int,
 
-/// the engine will search for max_time milliseconds or until it finishes
-/// searching max_depth ply.
-pub static mut MAX_TIME: Int = 0;
-pub static mut MAX_DEPTH: Int = 0;
+    /// the time when the engine starts searching, and when it should stop
+    pub start_time: u128,
+    pub stop_time: u128,
 
-/// the time when the engine starts searching, and when it should stop
-pub static mut START_TIME: u128 = 0;
-pub static mut STOP_TIME: u128 = 0;
+    /// the number of nodes we've searched
+    pub nodes: Int,
 
-/// the number of nodes we've searched
-pub static mut NODES: Int = 0;
+    /// a "triangular" PV array; for a good explanation of why a triangular
+    /// array is needed, see "How Computers Play Chess" by Levy and Newborn.
+    pub pv: [[Move; MAX_PLY]; MAX_PLY],
+    pub pv_length: [usize; MAX_PLY],
+    pub follow_pv: bool,
 
-/// a "triangular" PV array; for a good explanation of why a triangular array is
-/// needed, see "How Computers Play Chess" by Levy and Newborn.
-pub static mut PV: [[Move; MAX_PLY]; MAX_PLY] =
-    [[Move { u: 0 }; MAX_PLY]; MAX_PLY];
-pub static mut PV_LENGTH: [usize; MAX_PLY] = [0; MAX_PLY];
-pub static mut FOLLOW_PV: bool = false;
+    /// random numbers used to compute hash; see set_hash() in board.rs.
+    /// indexed by piece [color][type][square]
+    pub hash_piece: [[[Int; 64]; 6]; 2],
+    pub hash_side: Int,
+    pub hash_ep: [Int; 64],
+}
 
-/// random numbers used to compute hash; see set_hash() in board.rs.
-/// indexed by piece [color][type][square]
-pub static mut HASH_PIECE: [[[Int; 64]; 6]; 2] = [[[0; 64]; 6]; 2];
-pub static mut HASH_SIDE: Int = 0;
-pub static mut HASH_EP: [Int; 64] = [0; 64];
+impl Data {
+    /// create a new instance of Data
+
+    pub fn new() -> Data {
+        Data {
+            color: INIT_COLOR,
+            piece: INIT_PIECE,
+            side: LIGHT,
+            xside: DARK,
+            castle: 15,
+            ep: -1,
+            fifty: 0,
+            hash: 0,
+            ply: 0,
+            hply: 0,
+            gen_dat: [Gen {
+                m: Move { u: 0 },
+                score: 0,
+            }; GEN_STACK],
+            first_move: [0; MAX_PLY],
+            history: [[0; 64]; 64],
+            hist_dat: [Hist {
+                m: Move { u: 0 },
+                capture: 0,
+                castle: 0,
+                ep: 0,
+                fifty: 0,
+                hash: 0,
+            }; HIST_STACK],
+            max_time: 0,
+            max_depth: 0,
+            start_time: 0,
+            stop_time: 0,
+            nodes: 0,
+            pv: [[Move { u: 0 }; MAX_PLY]; MAX_PLY],
+            pv_length: [0; MAX_PLY],
+            follow_pv: false,
+            hash_piece: [[[0; 64]; 6]; 2],
+            hash_side: 0,
+            hash_ep: [0; 64],
+        }
+    }
+}
 
 /// Now we have the mailbox array, so called because it looks like a mailbox, at
 /// least according to Bob Hyatt. This is useful when we need to figure out what

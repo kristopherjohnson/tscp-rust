@@ -5,7 +5,7 @@
 //
 // Rust port by Kristopher Johnson
 
-use crate::data::{COLOR, PIECE, SIDE};
+use crate::data::Data;
 use crate::defs::{Int, BISHOP, DARK, EMPTY, KING, KNIGHT, LIGHT, PAWN, ROOK};
 
 const DOUBLED_PAWN_PENALTY: Int = 10;
@@ -110,7 +110,7 @@ static mut PIECE_MAT: [Int; 2] = [0; 2];
 /// the value of a side's pawns
 static mut PAWN_MAT: [Int; 2] = [0; 2];
 
-pub unsafe fn eval() -> Int {
+pub unsafe fn eval(d: &Data) -> Int {
     let mut score = [0; 2];
 
     // this is the first pass: set up PAWN_RANK, PIECE_MAT, and PAWN_MAT
@@ -123,13 +123,13 @@ pub unsafe fn eval() -> Int {
     PAWN_MAT[LIGHT as usize] = 0;
     PAWN_MAT[DARK as usize] = 0;
     for i in 0..64 {
-        if COLOR[i] == EMPTY {
+        if d.color[i] == EMPTY {
             continue;
         }
-        if PIECE[i] == PAWN {
-            PAWN_MAT[COLOR[i] as usize] += PIECE_VALUE[PAWN as usize];
+        if d.piece[i] == PAWN {
+            PAWN_MAT[d.color[i] as usize] += PIECE_VALUE[PAWN as usize];
             let f = col!(i) + 1; // add 1 because of the extra file in the array
-            if COLOR[i] == LIGHT {
+            if d.color[i] == LIGHT {
                 if PAWN_RANK[LIGHT as usize][f] < row!(i as Int) {
                     PAWN_RANK[LIGHT as usize][f] = row!(i as Int);
                 }
@@ -139,7 +139,7 @@ pub unsafe fn eval() -> Int {
                 }
             }
         } else {
-            PIECE_MAT[COLOR[i] as usize] += PIECE_VALUE[PIECE[i] as usize];
+            PIECE_MAT[d.color[i] as usize] += PIECE_VALUE[d.piece[i] as usize];
         }
     }
 
@@ -148,11 +148,11 @@ pub unsafe fn eval() -> Int {
         PIECE_MAT[LIGHT as usize] + PAWN_MAT[LIGHT as usize];
     score[DARK as usize] = PIECE_MAT[DARK as usize] + PAWN_MAT[DARK as usize];
     for i in 0..64 {
-        if COLOR[i] == EMPTY {
+        if d.color[i] == EMPTY {
             continue;
         }
-        if COLOR[i] == LIGHT {
-            match PIECE[i] {
+        if d.color[i] == LIGHT {
+            match d.piece[i] {
                 PAWN => {
                     score[LIGHT as usize] += eval_light_pawn(i);
                 }
@@ -184,7 +184,7 @@ pub unsafe fn eval() -> Int {
                 _ => {}
             }
         } else {
-            match PIECE[i] {
+            match d.piece[i] {
                 PAWN => {
                     score[DARK as usize] += eval_dark_pawn(i);
                 }
@@ -220,7 +220,7 @@ pub unsafe fn eval() -> Int {
 
     // the score[] array is set, now return the score relative to the side to
     // move
-    if SIDE == LIGHT {
+    if d.side == LIGHT {
         return score[LIGHT as usize] - score[DARK as usize];
     } else {
         return score[DARK as usize] - score[LIGHT as usize];

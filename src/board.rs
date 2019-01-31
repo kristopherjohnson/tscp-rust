@@ -25,7 +25,7 @@ macro_rules! gen_push {
 
 /// init_board() sets the board to the initial game state.
 
-pub unsafe fn init_board(d: &mut Data) {
+pub fn init_board(d: &mut Data) {
     d.color = INIT_COLOR;
     d.piece = INIT_PIECE;
     d.side = LIGHT;
@@ -41,8 +41,10 @@ pub unsafe fn init_board(d: &mut Data) {
 
 /// init_hash() initializes the random numbers used by set_hash().
 
-pub unsafe fn init_hash(d: &mut Data) {
-    libc::srand(0);
+pub fn init_hash(d: &mut Data) {
+    unsafe {
+        libc::srand(0);
+    }
     for i in 0..2 {
         for j in 0..6 {
             for k in 0..64 {
@@ -59,10 +61,12 @@ pub unsafe fn init_hash(d: &mut Data) {
 /// hash_rand() XORs some shifted random numbers together to make sure
 /// we have good coverage of all 32 bits. (rand() returns 16-bit numbers
 /// on some systems.)
-unsafe fn hash_rand() -> Int {
+fn hash_rand() -> Int {
     let mut r = 0;
-    for _ in 0..32 {
-        r ^= libc::rand() << 1;
+    unsafe {
+        for _ in 0..32 {
+            r ^= libc::rand() << 1;
+        }
     }
     r
 }
@@ -79,7 +83,7 @@ unsafe fn hash_rand() -> Int {
 /// XORed if there is one. (A chess technicality is that one position can't
 /// be a repetition of another if the en passant state is different.)
 
-pub unsafe fn set_hash(d: &mut Data) {
+pub fn set_hash(d: &mut Data) {
     d.hash = 0;
     for i in 0..64 {
         if d.color[i] != EMPTY {
@@ -99,7 +103,7 @@ pub unsafe fn set_hash(d: &mut Data) {
 /// scans the board to find side s's king and calls attack() to see if it's
 /// being attacked.
 
-pub unsafe fn in_check(d: &Data, s: Int) -> bool {
+pub fn in_check(d: &Data, s: Int) -> bool {
     for i in 0..64 {
         if d.piece[i] == KING && d.color[i] == s {
             return attack(&d, i, s ^ 1);
@@ -111,7 +115,7 @@ pub unsafe fn in_check(d: &Data, s: Int) -> bool {
 /// attack() returns true if square sq is being attacked by side s and false
 /// otherwise.
 
-unsafe fn attack(d: &Data, sq: usize, s: Int) -> bool {
+fn attack(d: &Data, sq: usize, s: Int) -> bool {
     for i in 0..64 {
         if d.color[i] == s {
             if d.piece[i] == PAWN {
@@ -162,7 +166,7 @@ unsafe fn attack(d: &Data, sq: usize, s: Int) -> bool {
 /// When it finds a piece/square combination, it calls gen_push to put the move
 /// on the "move stack."
 
-pub unsafe fn gen(d: &mut Data) {
+pub fn gen(d: &mut Data) {
     // so far, we have no moves for the current ply
     d.first_move[d.ply + 1] = d.first_move[d.ply];
 
@@ -278,7 +282,7 @@ pub unsafe fn gen(d: &mut Data) {
 /// gen_caps() is basically a copy of gen() that's modified to only generate
 /// capture and promote moves. It's used by the quiescence search.
 
-pub unsafe fn gen_caps(d: &mut Data) {
+pub fn gen_caps(d: &mut Data) {
     d.first_move[d.ply + 1] = d.first_move[d.ply];
     for i in 0..64 {
         if d.color[i] == d.side {
@@ -372,7 +376,7 @@ pub unsafe fn gen_caps(d: &mut Data) {
 /// move's history heuristic value. Note that 1,000,000 is added to a capture
 /// move's score, so it always gets ordered above a "normal" move. */
 
-unsafe fn gen_push(d: &mut Data, from: usize, to: usize, bits: u8) {
+fn gen_push(d: &mut Data, from: usize, to: usize, bits: u8) {
     if (bits & 16) != 0 {
         if d.side == LIGHT {
             if to <= H8 {
@@ -388,10 +392,12 @@ unsafe fn gen_push(d: &mut Data, from: usize, to: usize, bits: u8) {
     }
     let g = &mut d.gen_dat[d.first_move[d.ply + 1] as usize];
     d.first_move[d.ply + 1] += 1;
-    g.m.b.from = from as u8;
-    g.m.b.to = to as u8;
-    g.m.b.promote = 0;
-    g.m.b.bits = bits;
+    unsafe {
+        g.m.b.from = from as u8;
+        g.m.b.to = to as u8;
+        g.m.b.promote = 0;
+        g.m.b.bits = bits;
+    }
     if d.color[to] != EMPTY {
         g.score = 1000000 + d.piece[to] * 10 - d.piece[from];
     } else {
@@ -402,14 +408,16 @@ unsafe fn gen_push(d: &mut Data, from: usize, to: usize, bits: u8) {
 /// gen_promote() is just like gen_push(), only it puts 4 moves on the move
 /// stack, one for each possible promotion piece
 
-unsafe fn gen_promote(d: &mut Data, from: usize, to: usize, bits: u8) {
+fn gen_promote(d: &mut Data, from: usize, to: usize, bits: u8) {
     for i in KNIGHT..=QUEEN {
         let g = &mut d.gen_dat[d.first_move[d.ply + 1] as usize];
         d.first_move[d.ply + 1] += 1;
-        g.m.b.from = from as u8;
-        g.m.b.to = to as u8;
-        g.m.b.promote = i as u8;
-        g.m.b.bits = bits | 32;
+        unsafe {
+            g.m.b.from = from as u8;
+            g.m.b.to = to as u8;
+            g.m.b.promote = i as u8;
+            g.m.b.bits = bits | 32;
+        }
         g.score = 1000000 + (i * 10);
     }
 }
@@ -418,7 +426,7 @@ unsafe fn gen_promote(d: &mut Data, from: usize, to: usize, bits: u8) {
 /// undoes whatever it did and returns FALSE. Otherwise, it
 /// returns TRUE.
 
-pub unsafe fn makemove(d: &mut Data, m: MoveBytes) -> bool {
+pub fn makemove(d: &mut Data, m: MoveBytes) -> bool {
     let from: usize;
     let to: usize;
 
@@ -544,12 +552,12 @@ pub unsafe fn makemove(d: &mut Data, m: MoveBytes) -> bool {
 
 /// takeback() is very similar to makemove(), only backwards :)
 
-pub unsafe fn takeback(d: &mut Data) {
+pub fn takeback(d: &mut Data) {
     d.side ^= 1;
     d.xside ^= 1;
     d.ply -= 1;
     d.hply -= 1;
-    let m = d.hist_dat[d.hply].m.b;
+    let m = unsafe { d.hist_dat[d.hply].m.b };
     d.castle = d.hist_dat[d.hply].castle;
     d.ep = d.hist_dat[d.hply].ep;
     d.fifty = d.hist_dat[d.hply].fifty;

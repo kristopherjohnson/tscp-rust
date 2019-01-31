@@ -26,8 +26,8 @@ macro_rules! gen_push {
 /// init_board() sets the board to the initial game state.
 
 pub unsafe fn init_board(d: &mut Data) {
-    d.color.copy_from_slice(&INIT_COLOR);
-    d.piece.copy_from_slice(&INIT_PIECE);
+    d.color = INIT_COLOR;
+    d.piece = INIT_PIECE;
     d.side = LIGHT;
     d.xside = DARK;
     d.castle = 15;

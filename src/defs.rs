@@ -76,14 +76,40 @@ pub struct MoveBytes {
     pub bits: u8,
 }
 
-// #rust The use of a union for move representation requires a lot of code to be
-// in "unsafe" blocks.  We shoud either eliminate the union or provide some safe
-// functions to access the fields.
+// #rust TODO The use of a union for move representation requires a lot of code
+// to be in "unsafe" blocks.  We provide safe functions to avoid the need for
+// that.
 
 #[derive(Copy, Clone)]
 pub union Move {
     pub b: MoveBytes,
     pub u: Int,
+}
+
+impl Move {
+    /// safely extract MoveBytes variant from a Move
+    #[inline]
+    pub fn bytes(self: &Move) -> MoveBytes {
+        unsafe { self.b }
+    }
+
+    /// safely set MoveBytes variant in a Move
+    #[inline]
+    pub fn set_bytes(self: &mut Move, m: MoveBytes) {
+        self.b = m
+    }
+
+    /// safely extract 32-bit value from a Move
+    #[inline]
+    pub fn value(self: &Move) -> Int {
+        unsafe { self.u }
+    }
+
+    /// safely set 32-bit value for a Move
+    #[inline]
+    pub fn set_value(self: &mut Move, value: Int) {
+        self.u = value;
+    }
 }
 
 /// an element of the move stack. it's just a move with a score, so it can be

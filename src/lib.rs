@@ -61,150 +61,148 @@ pub fn tscp_main() {
     let mut d = Data::new();
     init_hash(&mut d);
     init_board(&mut d);
-    unsafe {
-        open_book(&mut d);
-        gen(&mut d);
-        let mut computer_side = EMPTY;
-        d.max_time = 1 << 25;
-        d.max_depth = 4;
-        loop {
-            if d.side == computer_side {
-                // computer's turn
+    open_book(&mut d);
+    gen(&mut d);
+    let mut computer_side = EMPTY;
+    d.max_time = 1 << 25;
+    d.max_depth = 4;
+    loop {
+        if d.side == computer_side {
+            // computer's turn
 
-                // think about the move and make it
-                think(&mut d, 1);
-                if d.pv[0][0].u == 0 {
-                    println!("(no legal moves");
-                    computer_side = EMPTY;
-                    continue;
-                }
-                let m = d.pv[0][0].b;
-                println!("Computer's move: {}", move_str(m));
-                makemove(&mut d, m);
-                d.ply = 0;
-                gen(&mut d);
-                print_result(&mut d);
+            // think about the move and make it
+            think(&mut d, 1);
+            if d.pv[0][0].value() == 0 {
+                println!("(no legal moves");
+                computer_side = EMPTY;
                 continue;
             }
+            let m = d.pv[0][0].bytes();
+            println!("Computer's move: {}", move_str(m));
+            makemove(&mut d, m);
+            d.ply = 0;
+            gen(&mut d);
+            print_result(&mut d);
+            continue;
+        }
 
-            // get user input
-            print!("tscp> ");
-            io::stdout().flush().expect("unable to flush prompt output");
-            let s = match scan_token() {
-                Ok(s) => s,
-                Err(err) => {
-                    println!("input error: {}", err);
-                    return;
-                }
-            };
-            if s.len() == 0 {
-                // EOF
+        // get user input
+        print!("tscp> ");
+        io::stdout().flush().expect("unable to flush prompt output");
+        let s = match scan_token() {
+            Ok(s) => s,
+            Err(err) => {
+                println!("input error: {}", err);
                 return;
             }
-            match s.as_ref() {
-                "on" => {
-                    computer_side = d.side;
-                    continue;
-                }
-                "off" => {
-                    computer_side = EMPTY;
-                    continue;
-                }
-                "st" => {
-                    let n = match scan_int() {
-                        Ok(n) => n,
-                        Err(err) => {
-                            println!("unable to read st argument: {}", err);
-                            return;
-                        }
-                    };
-                    d.max_time = n * 1000;
-                    d.max_depth = 32;
-                    continue;
-                }
-                "sd" => {
-                    let n = match scan_int() {
-                        Ok(n) => n,
-                        Err(err) => {
-                            println!("unable to read sd argument: {}", err);
-                            return;
-                        }
-                    };
-                    d.max_depth = n;
-                    d.max_time = 1 << 25;
-                    continue;
-                }
-                "undo" => {
-                    if d.hply == 0 {
-                        continue;
+        };
+        if s.len() == 0 {
+            // EOF
+            return;
+        }
+        match s.as_ref() {
+            "on" => {
+                computer_side = d.side;
+                continue;
+            }
+            "off" => {
+                computer_side = EMPTY;
+                continue;
+            }
+            "st" => {
+                let n = match scan_int() {
+                    Ok(n) => n,
+                    Err(err) => {
+                        println!("unable to read st argument: {}", err);
+                        return;
                     }
-                    computer_side = EMPTY;
-                    takeback(&mut d);
-                    d.ply = 0;
-                    gen(&mut d);
-                    continue;
-                }
-                "new" => {
-                    computer_side = EMPTY;
-                    init_board(&mut d);
-                    gen(&mut d);
-                    continue;
-                }
-                "d" => {
-                    print_board(&d);
-                    continue;
-                }
-                "bench" => {
-                    computer_side = EMPTY;
-                    bench(&mut d);
-                    continue;
-                }
-                "bye" => {
-                    println!("Share and enjoy!");
-                    break;
-                }
-                "xboard" => {
-                    xboard(&mut d);
-                    break;
-                }
-                "help" => {
-                    const HELP: [&'static str; 11] = [
-                        "on - computer plays for the side to move",
-                        "off - computer stops playing",
-                        "st n - search for n seconds per move",
-                        "sd n - search n ply per move",
-                        "undo - takes back a move",
-                        "new - starts a new game",
-                        "d - display the board",
-                        "bench - run the built-in benchmark",
-                        "bye - exit the program",
-                        "xboard - switch to XBoard mode",
-                        "Enter moves in coordinate notation, e.g., e2e4, e7e8Q",
-                    ];
-                    for line in HELP.iter() {
-                        println!("{}", line);
+                };
+                d.max_time = n * 1000;
+                d.max_depth = 32;
+                continue;
+            }
+            "sd" => {
+                let n = match scan_int() {
+                    Ok(n) => n,
+                    Err(err) => {
+                        println!("unable to read sd argument: {}", err);
+                        return;
                     }
+                };
+                d.max_depth = n;
+                d.max_time = 1 << 25;
+                continue;
+            }
+            "undo" => {
+                if d.hply == 0 {
+                    continue;
                 }
-                _ => {
-                    // maybe the user entered a move?
-                    let m = parse_move(&d, &s);
-                    if m == -1 {
+                computer_side = EMPTY;
+                takeback(&mut d);
+                d.ply = 0;
+                gen(&mut d);
+                continue;
+            }
+            "new" => {
+                computer_side = EMPTY;
+                init_board(&mut d);
+                gen(&mut d);
+                continue;
+            }
+            "d" => {
+                print_board(&d);
+                continue;
+            }
+            "bench" => {
+                computer_side = EMPTY;
+                bench(&mut d);
+                continue;
+            }
+            "bye" => {
+                println!("Share and enjoy!");
+                break;
+            }
+            "xboard" => {
+                xboard(&mut d);
+                break;
+            }
+            "help" => {
+                const HELP: [&'static str; 11] = [
+                    "on - computer plays for the side to move",
+                    "off - computer stops playing",
+                    "st n - search for n seconds per move",
+                    "sd n - search n ply per move",
+                    "undo - takes back a move",
+                    "new - starts a new game",
+                    "d - display the board",
+                    "bench - run the built-in benchmark",
+                    "bye - exit the program",
+                    "xboard - switch to XBoard mode",
+                    "Enter moves in coordinate notation, e.g., e2e4, e7e8Q",
+                ];
+                for line in HELP.iter() {
+                    println!("{}", line);
+                }
+            }
+            _ => {
+                // maybe the user entered a move?
+                let m = parse_move(&d, &s);
+                if m == -1 {
+                    println!("Illegal move.");
+                } else {
+                    let m = d.gen_dat[m as usize].m.bytes();
+                    if !makemove(&mut d, m) {
                         println!("Illegal move.");
                     } else {
-                        let m = d.gen_dat[m as usize].m.b;
-                        if !makemove(&mut d, m) {
-                            println!("Illegal move.");
-                        } else {
-                            d.ply = 0;
-                            gen(&mut d);
-                            print_result(&mut d);
-                        }
+                        d.ply = 0;
+                        gen(&mut d);
+                        print_result(&mut d);
                     }
                 }
             }
         }
-        close_book(&mut d);
     }
+    close_book(&mut d);
 }
 
 /// parse the move s (in coordinate notation) and return the move's index in
@@ -237,23 +235,23 @@ fn parse_move(d: &Data, s: &str) -> Int {
     let to = to as u8;
 
     for i in 0..d.first_move[1] {
-        unsafe {
-            if d.gen_dat[i].m.b.from == from && d.gen_dat[i].m.b.to == to {
-                // if the move is a promotion, handle the promotion piece; assume
-                // that the promotion moves occur consecutively in d.gen_dat.
-                if (d.gen_dat[i].m.b.bits & 32) != 0 {
-                    if s.len() < 5 {
-                        return i as Int + 3; // assume it's a queen
-                    }
-                    return match s[4] {
-                        'N' | 'n' => i,
-                        'B' | 'b' => i + 1,
-                        'R' | 'r' => i + 2,
-                        _ => i + 3, // assume it's a queen
-                    } as Int;
+        if d.gen_dat[i].m.bytes().from == from
+            && d.gen_dat[i].m.bytes().to == to
+        {
+            // if the move is a promotion, handle the promotion piece; assume
+            // that the promotion moves occur consecutively in d.gen_dat.
+            if (d.gen_dat[i].m.bytes().bits & 32) != 0 {
+                if s.len() < 5 {
+                    return i as Int + 3; // assume it's a queen
                 }
-                return i as Int;
+                return match s[4] {
+                    'N' | 'n' => i,
+                    'B' | 'b' => i + 1,
+                    'R' | 'r' => i + 2,
+                    _ => i + 3, // assume it's a queen
+                } as Int;
             }
+            return i as Int;
         }
     }
 
@@ -299,9 +297,9 @@ fn print_board(d: &Data) {
             }
             DARK => {
                 let light_char = PIECE_CHAR[d.piece[i as usize] as usize];
-                let dark_char_u32 = light_char as u32 + 'a' as u32 - 'A' as u32;
+                let dark_u32 = light_char as u32 + 'a' as u32 - 'A' as u32;
                 unsafe {
-                    print!(" {}", char::from_u32_unchecked(dark_char_u32));
+                    print!(" {}", char::from_u32_unchecked(dark_u32));
                 }
             }
             _ => {}
@@ -332,15 +330,13 @@ fn xboard(d: &mut Data) {
             .expect("unable to flush standard output");
         if d.side == computer_side {
             think(d, post);
-            unsafe {
-                if d.pv[0][0].u == 0 {
-                    computer_side = EMPTY;
-                    continue;
-                }
-                let m = d.pv[0][0].b;
-                println!("move {}", move_str(m));
-                makemove(d, m);
+            if d.pv[0][0].value() == 0 {
+                computer_side = EMPTY;
+                continue;
             }
+            let m = d.pv[0][0].bytes();
+            println!("move {}", move_str(m));
+            makemove(d, m);
             d.ply = 0;
             gen(d);
             print_result(d);
@@ -419,12 +415,10 @@ fn xboard(d: &mut Data) {
             }
             "hint" => {
                 think(d, 0);
-                unsafe {
-                    if d.pv[0][0].u == 0 {
-                        continue;
-                    }
-                    println!("Hint: {}", move_str(d.pv[0][0].b));
+                if d.pv[0][0].value() == 0 {
+                    continue;
                 }
+                println!("Hint: {}", move_str(d.pv[0][0].bytes()));
             }
             "undo" => {
                 if d.hply == 0 {
@@ -454,15 +448,13 @@ fn xboard(d: &mut Data) {
                 if m == -1 {
                     println!("Error (unknown command): {}", command);
                 } else {
-                    unsafe {
-                        let m = d.gen_dat[m as usize].m.b;
-                        if !makemove(d, m) {
-                            println!("Error (unknown command): {}", command);
-                        } else {
-                            d.ply = 0;
-                            gen(d);
-                            print_result(d);
-                        }
+                    let m = d.gen_dat[m as usize].m.bytes();
+                    if !makemove(d, m) {
+                        println!("Error (unknown command): {}", command);
+                    } else {
+                        d.ply = 0;
+                        gen(d);
+                        print_result(d);
                     }
                 }
             }
@@ -475,11 +467,9 @@ fn xboard(d: &mut Data) {
 fn print_result(d: &mut Data) {
     let mut i = 0;
     while i < d.first_move[1] {
-        unsafe {
-            if makemove(d, d.gen_dat[i].m.b) {
-                takeback(d);
-                break;
-            }
+        if makemove(d, d.gen_dat[i].m.bytes()) {
+            takeback(d);
+            break;
         }
         i += 1;
     }

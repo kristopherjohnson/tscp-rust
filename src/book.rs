@@ -71,9 +71,7 @@ pub fn book_move(d: &Data) -> Int {
     let mut line = String::from("");
     let mut j: Int;
     for i in 0..d.hply {
-        unsafe {
-            line = line + &format!("{} ", move_str(d.hist_dat[i].m.b));
-        }
+        line = line + &format!("{} ", move_str(d.hist_dat[i].m.bytes()));
     }
 
     // compare line to each line in the opening book
@@ -87,7 +85,7 @@ pub fn book_move(d: &Data) -> Int {
             if m == -1 {
                 continue;
             }
-            let m = unsafe { d.gen_dat[m as usize].m.u };
+            let m = d.gen_dat[m as usize].m.value();
 
             // add the book move to the move list, or update the move's count
             j = 0;

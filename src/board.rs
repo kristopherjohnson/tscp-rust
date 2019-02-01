@@ -494,7 +494,7 @@ pub fn makemove(d: &mut Data, m: MoveBytes) -> bool {
     }
 
     // back up information so we can take the move back later.
-    d.hist_dat[d.hply].m.b = m;
+    d.hist_dat[d.hply].m.set_bytes(m);
     d.hist_dat[d.hply].capture = d.piece[m.to as usize];
     d.hist_dat[d.hply].castle = d.castle;
     d.hist_dat[d.hply].ep = d.ep;
@@ -557,7 +557,7 @@ pub fn takeback(d: &mut Data) {
     d.xside ^= 1;
     d.ply -= 1;
     d.hply -= 1;
-    let m = unsafe { d.hist_dat[d.hply].m.b };
+    let m = d.hist_dat[d.hply].m.bytes();
     d.castle = d.hist_dat[d.hply].castle;
     d.ep = d.hist_dat[d.hply].ep;
     d.fifty = d.hist_dat[d.hply].fifty;

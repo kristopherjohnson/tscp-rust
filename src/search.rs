@@ -31,11 +31,9 @@ enum SearchResult {
 
 pub fn think(d: &mut Data, output: Int) {
     // try the opening book first
-    unsafe {
-        d.pv[0][0].u = book_move(&d);
-        if d.pv[0][0].u != -1 {
-            return;
-        }
+    d.pv[0][0].set_value(book_move(&d));
+    if d.pv[0][0].value() != -1 {
+        return;
     }
 
     d.start_time = get_ms();
@@ -73,8 +71,7 @@ pub fn think(d: &mut Data, output: Int) {
                 }
                 if output != 0 {
                     for j in 0..d.pv_length[0] {
-                        let m = unsafe { d.pv[0][j].b };
-                        print!(" {}", move_str(m));
+                        print!(" {}", move_str(d.pv[0][j].bytes()));
                     }
                     print!("\n");
                     stdout().flush().expect("flush");
@@ -139,10 +136,8 @@ fn search(d: &mut Data, alpha: Int, beta: Int, depth: Int) -> SearchResult {
     // loop through the moves
     for i in d.first_move[d.ply]..d.first_move[d.ply + 1] {
         sort(d, i);
-        unsafe {
-            if !makemove(d, d.gen_dat[i].m.b) {
-                continue;
-            }
+        if !makemove(d, d.gen_dat[i].m.bytes()) {
+            continue;
         }
         f = true;
         match search(d, -beta, -alpha, depth - 1) {
@@ -155,10 +150,8 @@ fn search(d: &mut Data, alpha: Int, beta: Int, depth: Int) -> SearchResult {
                 if x > alpha {
                     // this move caused a cutoff, so increase the history value
                     // so it gets ordered high next time so we can search it
-                    unsafe {
-                        d.history[d.gen_dat[i].m.b.from as usize]
-                            [d.gen_dat[i].m.b.to as usize] += depth;
-                    }
+                    d.history[d.gen_dat[i].m.bytes().from as usize]
+                        [d.gen_dat[i].m.bytes().to as usize] += depth;
                     if x >= beta {
                         return SearchResult::Value(beta);
                     }
@@ -236,10 +229,8 @@ fn quiesce(d: &mut Data, alpha: Int, beta: Int) -> SearchResult {
     // loop through the moves
     for i in d.first_move[d.ply]..d.first_move[d.ply + 1] {
         sort(d, i);
-        unsafe {
-            if !makemove(d, d.gen_dat[i].m.b) {
-                continue;
-            }
+        if !makemove(d, d.gen_dat[i].m.bytes()) {
+            continue;
         }
         match quiesce(d, -beta, -alpha) {
             SearchResult::Timeout => {
@@ -289,12 +280,10 @@ pub fn reps(d: &Data) -> Int {
 fn sort_pv(d: &mut Data) {
     d.follow_pv = false;
     for i in d.first_move[d.ply]..d.first_move[d.ply + 1] {
-        unsafe {
-            if d.gen_dat[i].m.u == d.pv[0][d.ply].u {
-                d.follow_pv = true;
-                d.gen_dat[i].score += 10000000;
-                return;
-            }
+        if d.gen_dat[i].m.value() == d.pv[0][d.ply].value() {
+            d.follow_pv = true;
+            d.gen_dat[i].score += 10000000;
+            return;
         }
     }
 }

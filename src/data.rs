@@ -87,6 +87,20 @@ pub struct Data {
 
     /// opening book
     pub book_lines: Vec<String>,
+
+    /// pawn_rank[x][y] is the rank of the least advanced pawn of color x on
+    /// file y - 1. There are "buffer files" on the left and right to avoid
+    /// special-case logic later. If there's no pawn on a rank, we pretend the
+    /// pawn is impossibly far advanced (0 for LIGHT and 7 for DARK).  This
+    /// makes it easy to test for pawns on a rank and it simplifies some pawn
+    /// evaluation code.
+    pub pawn_rank: [[Int; 10]; 2],
+
+    /// the value of a side's pieces
+    pub piece_mat: [Int; 2],
+
+    /// the value of a side's pawns
+    pub pawn_mat: [Int; 2],
 }
 
 impl Data {
@@ -130,6 +144,9 @@ impl Data {
             hash_side: 0,
             hash_ep: [0; 64],
             book_lines: Vec::new(),
+            pawn_rank: [[0; 10]; 2],
+            piece_mat: [0; 2],
+            pawn_mat: [0; 2],
         }
     }
 }

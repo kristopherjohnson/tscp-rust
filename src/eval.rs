@@ -97,56 +97,45 @@ const FLIP: [usize; 64] = [
      0,   1,   2,   3,   4,   5,   6,   7
 ];
 
-/// pawn_rank[x][y] is the rank of the least advanced pawn of color x on file y
-/// - 1. There are "buffer files" on the left and right to avoid special-case
-/// logic later. If there's no pawn on a rank, we pretend the pawn is impossibly
-/// far advanced (0 for LIGHT and 7 for DARK). This makes it easy to test for
-/// pawns on a rank and it simplifies some pawn evaluation code.
-static mut PAWN_RANK: [[Int; 10]; 2] = [[0; 10]; 2];
-
-/// the value of a side's pieces
-static mut PIECE_MAT: [Int; 2] = [0; 2];
-
-/// the value of a side's pawns
-static mut PAWN_MAT: [Int; 2] = [0; 2];
-
-pub unsafe fn eval(d: &Data) -> Int {
+pub fn eval(d: &mut Data) -> Int {
     let mut score = [0; 2];
 
-    // this is the first pass: set up PAWN_RANK, PIECE_MAT, and PAWN_MAT
+    // this is the first pass: set up d.pawn_rank, d.piece_mat, and d.pawn_mat
     for i in 0..10 {
-        PAWN_RANK[LIGHT as usize][i] = 0;
-        PAWN_RANK[DARK as usize][i] = 7;
+        d.pawn_rank[LIGHT as usize][i] = 0;
+        d.pawn_rank[DARK as usize][i] = 7;
     }
-    PIECE_MAT[LIGHT as usize] = 0;
-    PIECE_MAT[DARK as usize] = 0;
-    PAWN_MAT[LIGHT as usize] = 0;
-    PAWN_MAT[DARK as usize] = 0;
+    d.piece_mat[LIGHT as usize] = 0;
+    d.piece_mat[DARK as usize] = 0;
+    d.pawn_mat[LIGHT as usize] = 0;
+    d.pawn_mat[DARK as usize] = 0;
     for i in 0..64 {
         if d.color[i] == EMPTY {
             continue;
         }
         if d.piece[i] == PAWN {
-            PAWN_MAT[d.color[i] as usize] += PIECE_VALUE[PAWN as usize];
+            d.pawn_mat[d.color[i] as usize] += PIECE_VALUE[PAWN as usize];
             let f = col!(i) + 1; // add 1 because of the extra file in the array
             if d.color[i] == LIGHT {
-                if PAWN_RANK[LIGHT as usize][f] < row!(i as Int) {
-                    PAWN_RANK[LIGHT as usize][f] = row!(i as Int);
+                if d.pawn_rank[LIGHT as usize][f] < row!(i as Int) {
+                    d.pawn_rank[LIGHT as usize][f] = row!(i as Int);
                 }
             } else {
-                if PAWN_RANK[DARK as usize][f] > row!(i as Int) {
-                    PAWN_RANK[DARK as usize][f] = row!(i as Int);
+                if d.pawn_rank[DARK as usize][f] > row!(i as Int) {
+                    d.pawn_rank[DARK as usize][f] = row!(i as Int);
                 }
             }
         } else {
-            PIECE_MAT[d.color[i] as usize] += PIECE_VALUE[d.piece[i] as usize];
+            d.piece_mat[d.color[i] as usize] +=
+                PIECE_VALUE[d.piece[i] as usize];
         }
     }
 
     // this is the second pass: evaluate each piece
     score[LIGHT as usize] =
-        PIECE_MAT[LIGHT as usize] + PAWN_MAT[LIGHT as usize];
-    score[DARK as usize] = PIECE_MAT[DARK as usize] + PAWN_MAT[DARK as usize];
+        d.piece_mat[LIGHT as usize] + d.pawn_mat[LIGHT as usize];
+    score[DARK as usize] =
+        d.piece_mat[DARK as usize] + d.pawn_mat[DARK as usize];
     for i in 0..64 {
         if d.color[i] == EMPTY {
             continue;
@@ -154,7 +143,7 @@ pub unsafe fn eval(d: &Data) -> Int {
         if d.color[i] == LIGHT {
             match d.piece[i] {
                 PAWN => {
-                    score[LIGHT as usize] += eval_light_pawn(i);
+                    score[LIGHT as usize] += eval_light_pawn(d, i);
                 }
                 KNIGHT => {
                     score[LIGHT as usize] += KNIGHT_PCSQ[i];
@@ -163,8 +152,8 @@ pub unsafe fn eval(d: &Data) -> Int {
                     score[LIGHT as usize] += BISHOP_PCSQ[i];
                 }
                 ROOK => {
-                    if PAWN_RANK[LIGHT as usize][col!(i) + 1] == 0 {
-                        if PAWN_RANK[DARK as usize][col!(i) + 1] == 7 {
+                    if d.pawn_rank[LIGHT as usize][col!(i) + 1] == 0 {
+                        if d.pawn_rank[DARK as usize][col!(i) + 1] == 7 {
                             score[LIGHT as usize] += ROOK_OPEN_FILE_BONUS;
                         } else {
                             score[LIGHT as usize] += ROOK_SEMI_OPEN_FILE_BONUS;
@@ -175,10 +164,10 @@ pub unsafe fn eval(d: &Data) -> Int {
                     }
                 }
                 KING => {
-                    if PIECE_MAT[DARK as usize] <= 1200 {
+                    if d.piece_mat[DARK as usize] <= 1200 {
                         score[LIGHT as usize] += KING_ENDGAME_PCSQ[i];
                     } else {
-                        score[LIGHT as usize] += eval_light_king(i);
+                        score[LIGHT as usize] += eval_light_king(d, i);
                     }
                 }
                 _ => {}
@@ -186,7 +175,7 @@ pub unsafe fn eval(d: &Data) -> Int {
         } else {
             match d.piece[i] {
                 PAWN => {
-                    score[DARK as usize] += eval_dark_pawn(i);
+                    score[DARK as usize] += eval_dark_pawn(d, i);
                 }
                 KNIGHT => {
                     score[DARK as usize] += KNIGHT_PCSQ[FLIP[i]];
@@ -195,8 +184,8 @@ pub unsafe fn eval(d: &Data) -> Int {
                     score[DARK as usize] += BISHOP_PCSQ[FLIP[i]];
                 }
                 ROOK => {
-                    if PAWN_RANK[DARK as usize][col!(i) + 1] == 7 {
-                        if PAWN_RANK[LIGHT as usize][col!(i) + 1] == 0 {
+                    if d.pawn_rank[DARK as usize][col!(i) + 1] == 7 {
+                        if d.pawn_rank[LIGHT as usize][col!(i) + 1] == 0 {
                             score[DARK as usize] += ROOK_OPEN_FILE_BONUS;
                         } else {
                             score[DARK as usize] += ROOK_SEMI_OPEN_FILE_BONUS;
@@ -207,10 +196,10 @@ pub unsafe fn eval(d: &Data) -> Int {
                     }
                 }
                 KING => {
-                    if PIECE_MAT[LIGHT as usize] <= 1200 {
+                    if d.piece_mat[LIGHT as usize] <= 1200 {
                         score[DARK as usize] += KING_ENDGAME_PCSQ[FLIP[i]];
                     } else {
-                        score[DARK as usize] += eval_dark_king(i);
+                        score[DARK as usize] += eval_dark_king(d, i);
                     }
                 }
                 _ => {}
@@ -227,7 +216,7 @@ pub unsafe fn eval(d: &Data) -> Int {
     }
 }
 
-unsafe fn eval_light_pawn(sq: usize) -> Int {
+fn eval_light_pawn(d: &Data, sq: usize) -> Int {
     // the value to return
     let mut r = 0;
 
@@ -240,28 +229,28 @@ unsafe fn eval_light_pawn(sq: usize) -> Int {
     r += PAWN_PCSQ[sq];
 
     // if there's a pawn behind this one, it's doubled
-    if PAWN_RANK[LIGHT as usize][f] > row {
+    if d.pawn_rank[LIGHT as usize][f] > row {
         r -= DOUBLED_PAWN_PENALTY;
     }
 
     // if there aren't any friendly pawns on either side of this one, it's
     // isolated
-    if (PAWN_RANK[LIGHT as usize][f - 1] == 0)
-        && (PAWN_RANK[LIGHT as usize][f + 1] == 0)
+    if (d.pawn_rank[LIGHT as usize][f - 1] == 0)
+        && (d.pawn_rank[LIGHT as usize][f + 1] == 0)
     {
         r -= ISOLATED_PAWN_PENALTY;
     }
     // if it's not isolated, it might be backwards
-    else if (PAWN_RANK[LIGHT as usize][f - 1] < row)
-        && (PAWN_RANK[LIGHT as usize][f + 1] < row)
+    else if (d.pawn_rank[LIGHT as usize][f - 1] < row)
+        && (d.pawn_rank[LIGHT as usize][f + 1] < row)
     {
         r -= BACKWARDS_PAWN_PENALTY;
     }
 
     // add a bonus if the pawn is passed
-    if (PAWN_RANK[DARK as usize][f - 1] >= row)
-        && (PAWN_RANK[DARK as usize][f] >= row)
-        && (PAWN_RANK[DARK as usize][f + 1] >= row)
+    if (d.pawn_rank[DARK as usize][f - 1] >= row)
+        && (d.pawn_rank[DARK as usize][f] >= row)
+        && (d.pawn_rank[DARK as usize][f + 1] >= row)
     {
         r += (7 - row) * PASSED_PAWN_BONUS;
     }
@@ -269,7 +258,7 @@ unsafe fn eval_light_pawn(sq: usize) -> Int {
     r
 }
 
-unsafe fn eval_dark_pawn(sq: usize) -> Int {
+fn eval_dark_pawn(d: &Data, sq: usize) -> Int {
     // the value to return
     let mut r = 0;
 
@@ -282,28 +271,28 @@ unsafe fn eval_dark_pawn(sq: usize) -> Int {
     r += PAWN_PCSQ[FLIP[sq]];
 
     // if there's a pawn behind this one, it's doubled
-    if PAWN_RANK[DARK as usize][f] < row {
+    if d.pawn_rank[DARK as usize][f] < row {
         r -= DOUBLED_PAWN_PENALTY;
     }
 
     // if there aren't any friendly pawns on either side of this one, it's
     // isolated
-    if (PAWN_RANK[DARK as usize][f - 1] == 7)
-        && (PAWN_RANK[DARK as usize][f + 1] == 7)
+    if (d.pawn_rank[DARK as usize][f - 1] == 7)
+        && (d.pawn_rank[DARK as usize][f + 1] == 7)
     {
         r -= ISOLATED_PAWN_PENALTY;
     }
     // if it's not isolated, it might be backwards
-    else if (PAWN_RANK[DARK as usize][f - 1] > row)
-        && (PAWN_RANK[DARK as usize][f + 1] > row)
+    else if (d.pawn_rank[DARK as usize][f - 1] > row)
+        && (d.pawn_rank[DARK as usize][f + 1] > row)
     {
         r -= BACKWARDS_PAWN_PENALTY;
     }
 
     // add a bonus if the pawn is passed
-    if (PAWN_RANK[LIGHT as usize][f - 1] <= row)
-        && (PAWN_RANK[LIGHT as usize][f] <= row)
-        && (PAWN_RANK[LIGHT as usize][f + 1] <= row)
+    if (d.pawn_rank[LIGHT as usize][f - 1] <= row)
+        && (d.pawn_rank[LIGHT as usize][f] <= row)
+        && (d.pawn_rank[LIGHT as usize][f + 1] <= row)
     {
         r += row * PASSED_PAWN_BONUS;
     }
@@ -311,7 +300,7 @@ unsafe fn eval_dark_pawn(sq: usize) -> Int {
     r
 }
 
-unsafe fn eval_light_king(sq: usize) -> Int {
+fn eval_light_king(d: &Data, sq: usize) -> Int {
     // the value to return
     let mut r = KING_PCSQ[sq];
 
@@ -320,19 +309,19 @@ unsafe fn eval_light_king(sq: usize) -> Int {
     // if the king is castled, use a special function to evaluate the pawns on
     // the appropriate side
     if col < 3 {
-        r += eval_lkp(1);
-        r += eval_lkp(2);
-        r += eval_lkp(3) / 2; // problems with pawns on the c & f files are not as severe
+        r += eval_lkp(d, 1);
+        r += eval_lkp(d, 2);
+        r += eval_lkp(d, 3) / 2; // problems with pawns on the c & f files are not as severe
     } else if col > 4 {
-        r += eval_lkp(8);
-        r += eval_lkp(7);
-        r += eval_lkp(6) / 2;
+        r += eval_lkp(d, 8);
+        r += eval_lkp(d, 7);
+        r += eval_lkp(d, 6) / 2;
     }
     // otherwise just assess a penalty if there are open files near the king
     else {
         for i in (col as usize)..=(col as usize + 2) {
-            if (PAWN_RANK[LIGHT as usize][i] == 0)
-                && (PAWN_RANK[DARK as usize][i] == 7)
+            if (d.pawn_rank[LIGHT as usize][i] == 0)
+                && (d.pawn_rank[DARK as usize][i] == 7)
             {
                 r -= 10;
             }
@@ -342,7 +331,7 @@ unsafe fn eval_light_king(sq: usize) -> Int {
     // scale the king safely value according to the opponent's material; the
     // premise is that your king safety can only be bad if the opponent has
     // enough pieces to attack you.
-    r *= PIECE_MAT[DARK as usize];
+    r *= d.piece_mat[DARK as usize];
     r /= 3100;
 
     r
@@ -350,10 +339,10 @@ unsafe fn eval_light_king(sq: usize) -> Int {
 
 /// eval_lkp(f) evaluates the Light King Pawn on file f
 
-unsafe fn eval_lkp(f: usize) -> Int {
+fn eval_lkp(d: &Data, f: usize) -> Int {
     let mut r = 0;
 
-    let rank_light = PAWN_RANK[LIGHT as usize][f];
+    let rank_light = d.pawn_rank[LIGHT as usize][f];
 
     if rank_light == 6 {
         // pawn hasn't moved
@@ -365,7 +354,7 @@ unsafe fn eval_lkp(f: usize) -> Int {
         r -= 25; // no pawn on this file
     }
 
-    let rank_dark = PAWN_RANK[DARK as usize][f];
+    let rank_dark = d.pawn_rank[DARK as usize][f];
 
     if rank_dark == 7 {
         r -= 15; // no enemy pawn
@@ -378,37 +367,37 @@ unsafe fn eval_lkp(f: usize) -> Int {
     r
 }
 
-unsafe fn eval_dark_king(sq: usize) -> Int {
+fn eval_dark_king(d: &Data, sq: usize) -> Int {
     let mut r = KING_PCSQ[FLIP[sq]];
 
     let col = col!(sq as Int);
 
     if col < 3 {
-        r += eval_dkp(1);
-        r += eval_dkp(2);
-        r += eval_dkp(3) / 2;
+        r += eval_dkp(d, 1);
+        r += eval_dkp(d, 2);
+        r += eval_dkp(d, 3) / 2;
     } else if col > 4 {
-        r += eval_dkp(8);
-        r += eval_dkp(7);
-        r += eval_dkp(6) / 2;
+        r += eval_dkp(d, 8);
+        r += eval_dkp(d, 7);
+        r += eval_dkp(d, 6) / 2;
     } else {
         for i in (col as usize)..=(col as usize + 2) {
-            if (PAWN_RANK[LIGHT as usize][i] == 0)
-                && (PAWN_RANK[DARK as usize][i] == 7)
+            if (d.pawn_rank[LIGHT as usize][i] == 0)
+                && (d.pawn_rank[DARK as usize][i] == 7)
             {
                 r -= 10;
             }
         }
     }
-    r *= PIECE_MAT[LIGHT as usize];
+    r *= d.piece_mat[LIGHT as usize];
     r /= 3100;
     r
 }
 
-unsafe fn eval_dkp(f: usize) -> Int {
+fn eval_dkp(d: &Data, f: usize) -> Int {
     let mut r = 0;
 
-    let rank_dark = PAWN_RANK[DARK as usize][f];
+    let rank_dark = d.pawn_rank[DARK as usize][f];
 
     if rank_dark == 1 {
         ;
@@ -420,7 +409,7 @@ unsafe fn eval_dkp(f: usize) -> Int {
         r -= 25;
     }
 
-    let rank_light = PAWN_RANK[LIGHT as usize][f];
+    let rank_light = d.pawn_rank[LIGHT as usize][f];
 
     if rank_light == 0 {
         r -= 15;

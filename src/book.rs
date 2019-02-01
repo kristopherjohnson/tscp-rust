@@ -55,7 +55,7 @@ pub fn close_book(d: &mut Data) {
 /// book_move() returns a book move (in integer format) or -1 if there is no
 /// book move.
 
-pub unsafe fn book_move(d: &Data) -> Int {
+pub fn book_move(d: &Data) -> Int {
     if d.hply > 25 {
         return -1;
     }
@@ -71,7 +71,9 @@ pub unsafe fn book_move(d: &Data) -> Int {
     let mut line = String::from("");
     let mut j: Int;
     for i in 0..d.hply {
-        line = line + &format!("{} ", move_str(d.hist_dat[i].m.b));
+        unsafe {
+            line = line + &format!("{} ", move_str(d.hist_dat[i].m.b));
+        }
     }
 
     // compare line to each line in the opening book
@@ -85,7 +87,7 @@ pub unsafe fn book_move(d: &Data) -> Int {
             if m == -1 {
                 continue;
             }
-            let m = d.gen_dat[m as usize].m.u;
+            let m = unsafe { d.gen_dat[m as usize].m.u };
 
             // add the book move to the move list, or update the move's count
             j = 0;
@@ -112,7 +114,9 @@ pub unsafe fn book_move(d: &Data) -> Int {
 
     // Think of total_count as the set of matching book lines. Randomly pick one
     // of those lines (j) and figure out which move j "corresponds" to.
-    j = libc::rand() % (total_count as i32);
+    unsafe {
+        j = libc::rand() % (total_count as i32);
+    }
     for i in 0..(moves as usize) {
         j -= count[i];
         if j < 0 {

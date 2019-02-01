@@ -76,6 +76,10 @@ pub struct MoveBytes {
     pub bits: u8,
 }
 
+// #rust The use of a union for move representation requires a lot of code to be
+// in "unsafe" blocks.  We shoud either eliminate the union or provide some safe
+// functions to access the fields.
+
 #[derive(Copy, Clone)]
 pub union Move {
     pub b: MoveBytes,

@@ -210,7 +210,7 @@ pub fn tscp_main() {
 /// parse the move s (in coordinate notation) and return the move's index in
 /// d.gen_dat, or -1 if the move is illegal
 
-unsafe fn parse_move(d: &Data, s: &str) -> Int {
+fn parse_move(d: &Data, s: &str) -> Int {
     // convert string to vector of characters
     let s: Vec<char> = String::from(s).chars().collect();
 
@@ -237,21 +237,23 @@ unsafe fn parse_move(d: &Data, s: &str) -> Int {
     let to = to as u8;
 
     for i in 0..d.first_move[1] {
-        if d.gen_dat[i].m.b.from == from && d.gen_dat[i].m.b.to == to {
-            // if the move is a promotion, handle the promotion piece; assume
-            // that the promotion moves occur consecutively in d.gen_dat.
-            if (d.gen_dat[i].m.b.bits & 32) != 0 {
-                if s.len() < 5 {
-                    return i as Int + 3; // assume it's a queen
+        unsafe {
+            if d.gen_dat[i].m.b.from == from && d.gen_dat[i].m.b.to == to {
+                // if the move is a promotion, handle the promotion piece; assume
+                // that the promotion moves occur consecutively in d.gen_dat.
+                if (d.gen_dat[i].m.b.bits & 32) != 0 {
+                    if s.len() < 5 {
+                        return i as Int + 3; // assume it's a queen
+                    }
+                    return match s[4] {
+                        'N' | 'n' => i,
+                        'B' | 'b' => i + 1,
+                        'R' | 'r' => i + 2,
+                        _ => i + 3, // assume it's a queen
+                    } as Int;
                 }
-                return match s[4] {
-                    'N' | 'n' => i,
-                    'B' | 'b' => i + 1,
-                    'R' | 'r' => i + 2,
-                    _ => i + 3, // assume it's a queen
-                } as Int;
+                return i as Int;
             }
-            return i as Int;
         }
     }
 
@@ -261,28 +263,31 @@ unsafe fn parse_move(d: &Data, s: &str) -> Int {
 
 /// move_str returns a string with move m in coordinate notation
 
-unsafe fn move_str(m: MoveBytes) -> String {
-    let from_col = char::from_u32_unchecked(col!(m.from) as u32 + 'a' as u32);
-    let from_row = 8 - row!(m.from);
-    let to_col = char::from_u32_unchecked(col!(m.to) as u32 + 'a' as u32);
-    let to_row = 8 - row!(m.to);
+fn move_str(m: MoveBytes) -> String {
+    unsafe {
+        let from_col =
+            char::from_u32_unchecked(col!(m.from) as u32 + 'a' as u32);
+        let from_row = 8 - row!(m.from);
+        let to_col = char::from_u32_unchecked(col!(m.to) as u32 + 'a' as u32);
+        let to_row = 8 - row!(m.to);
 
-    if (m.bits & 32) != 0 {
-        let c = match m.promote as Int {
-            KNIGHT => 'n',
-            BISHOP => 'b',
-            ROOK => 'r',
-            _ => 'q',
-        };
-        format!("{}{}{}{}{}", from_col, from_row, to_col, to_row, c)
-    } else {
-        format!("{}{}{}{}", from_col, from_row, to_col, to_row)
+        if (m.bits & 32) != 0 {
+            let c = match m.promote as Int {
+                KNIGHT => 'n',
+                BISHOP => 'b',
+                ROOK => 'r',
+                _ => 'q',
+            };
+            format!("{}{}{}{}{}", from_col, from_row, to_col, to_row, c)
+        } else {
+            format!("{}{}{}{}", from_col, from_row, to_col, to_row)
+        }
     }
 }
 
 /// print_board() prints the board
 
-unsafe fn print_board(d: &Data) {
+fn print_board(d: &Data) {
     print!("\n8 ");
     for i in 0..64 {
         match d.color[i] {
@@ -295,7 +300,9 @@ unsafe fn print_board(d: &Data) {
             DARK => {
                 let light_char = PIECE_CHAR[d.piece[i as usize] as usize];
                 let dark_char_u32 = light_char as u32 + 'a' as u32 - 'A' as u32;
-                print!(" {}", char::from_u32_unchecked(dark_char_u32));
+                unsafe {
+                    print!(" {}", char::from_u32_unchecked(dark_char_u32));
+                }
             }
             _ => {}
         }
@@ -310,7 +317,7 @@ unsafe fn print_board(d: &Data) {
 // See the following page for details:
 // http://www.research.digital.com/SRC/personal/mann/xboard/engine-intf.html
 
-unsafe fn xboard(d: &mut Data) {
+fn xboard(d: &mut Data) {
     let mut post = 0;
 
     // #rust TODO: Find a way to do this in Rust:
@@ -325,13 +332,15 @@ unsafe fn xboard(d: &mut Data) {
             .expect("unable to flush standard output");
         if d.side == computer_side {
             think(d, post);
-            if d.pv[0][0].u == 0 {
-                computer_side = EMPTY;
-                continue;
+            unsafe {
+                if d.pv[0][0].u == 0 {
+                    computer_side = EMPTY;
+                    continue;
+                }
+                let m = d.pv[0][0].b;
+                println!("move {}", move_str(m));
+                makemove(d, m);
             }
-            let m = d.pv[0][0].b;
-            println!("move {}", move_str(m));
-            makemove(d, m);
             d.ply = 0;
             gen(d);
             print_result(d);
@@ -410,10 +419,12 @@ unsafe fn xboard(d: &mut Data) {
             }
             "hint" => {
                 think(d, 0);
-                if d.pv[0][0].u == 0 {
-                    continue;
+                unsafe {
+                    if d.pv[0][0].u == 0 {
+                        continue;
+                    }
+                    println!("Hint: {}", move_str(d.pv[0][0].b));
                 }
-                println!("Hint: {}", move_str(d.pv[0][0].b));
             }
             "undo" => {
                 if d.hply == 0 {
@@ -443,13 +454,15 @@ unsafe fn xboard(d: &mut Data) {
                 if m == -1 {
                     println!("Error (unknown command): {}", command);
                 } else {
-                    let m = d.gen_dat[m as usize].m.b;
-                    if !makemove(d, m) {
-                        println!("Error (unknown command): {}", command);
-                    } else {
-                        d.ply = 0;
-                        gen(d);
-                        print_result(d);
+                    unsafe {
+                        let m = d.gen_dat[m as usize].m.b;
+                        if !makemove(d, m) {
+                            println!("Error (unknown command): {}", command);
+                        } else {
+                            d.ply = 0;
+                            gen(d);
+                            print_result(d);
+                        }
                     }
                 }
             }
@@ -459,12 +472,14 @@ unsafe fn xboard(d: &mut Data) {
 
 /// print_result() checks to see if the game is over, and if so, prints the result.
 
-unsafe fn print_result(d: &mut Data) {
+fn print_result(d: &mut Data) {
     let mut i = 0;
     while i < d.first_move[1] {
-        if makemove(d, d.gen_dat[i].m.b) {
-            takeback(d);
-            break;
+        unsafe {
+            if makemove(d, d.gen_dat[i].m.b) {
+                takeback(d);
+                break;
+            }
         }
         i += 1;
     }
@@ -513,7 +528,7 @@ const BENCH_PIECE: [Int; 64] = [
     3, 6, 2, 6, 3, 6, 5, 6
 ];
 
-unsafe fn bench(d: &mut Data) {
+fn bench(d: &mut Data) {
     let mut t: [Int; 3] = [0; 3];
 
     // setting the position to a non-initial position confuses the opening book

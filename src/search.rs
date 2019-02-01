@@ -14,8 +14,6 @@ use crate::{get_ms, move_str};
 
 use std::io::{stdout, Write};
 
-static mut STOP_SEARCH: bool = false;
-
 /// #rust The original C code uses setjmp/longjmp to unwind the stack and exit
 /// if thinking-time expires during search().  Rust doesn't make it easy to use
 /// setjmp/longjmp, so instead our search() will return Timeout in that case.
@@ -31,14 +29,15 @@ enum SearchResult {
 // 1 = normal output
 // 2 = xboard format output
 
-pub unsafe fn think(d: &mut Data, output: Int) {
+pub fn think(d: &mut Data, output: Int) {
     // try the opening book first
-    d.pv[0][0].u = book_move(&d);
-    if d.pv[0][0].u != -1 {
-        return;
+    unsafe {
+        d.pv[0][0].u = book_move(&d);
+        if d.pv[0][0].u != -1 {
+            return;
+        }
     }
 
-    STOP_SEARCH = false;
     d.start_time = get_ms();
     d.stop_time = d.start_time + d.max_time as u128;
 
@@ -74,7 +73,8 @@ pub unsafe fn think(d: &mut Data, output: Int) {
                 }
                 if output != 0 {
                     for j in 0..d.pv_length[0] {
-                        print!(" {}", move_str(d.pv[0][j].b));
+                        let m = unsafe { d.pv[0][j].b };
+                        print!(" {}", move_str(m));
                     }
                     print!("\n");
                     stdout().flush().expect("flush");
@@ -89,12 +89,7 @@ pub unsafe fn think(d: &mut Data, output: Int) {
 
 /// search() does just that, in negamax fashion
 
-unsafe fn search(
-    d: &mut Data,
-    alpha: Int,
-    beta: Int,
-    depth: Int,
-) -> SearchResult {
+fn search(d: &mut Data, alpha: Int, beta: Int, depth: Int) -> SearchResult {
     // we're as deep as we want to be; call quiesce() to get a reasonable score
     // and return it
     if depth == 0 {
@@ -104,7 +99,7 @@ unsafe fn search(
 
     // do some housekeeping every 1024 nodes
     if (d.nodes & 1023) == 0 {
-        if !checkup(&d) {
+        if !checkup(d) {
             return SearchResult::Timeout;
         }
     }
@@ -120,10 +115,10 @@ unsafe fn search(
 
     // are we too deep?
     if d.ply >= MAX_PLY - 1 {
-        return SearchResult::Value(eval(&d));
+        return SearchResult::Value(eval(d));
     }
     if d.hply >= HIST_STACK - 1 {
-        return SearchResult::Value(eval(&d));
+        return SearchResult::Value(eval(d));
     }
 
     // are we in check? if so, we want to search deeper
@@ -144,8 +139,10 @@ unsafe fn search(
     // loop through the moves
     for i in d.first_move[d.ply]..d.first_move[d.ply + 1] {
         sort(d, i);
-        if !makemove(d, d.gen_dat[i].m.b) {
-            continue;
+        unsafe {
+            if !makemove(d, d.gen_dat[i].m.b) {
+                continue;
+            }
         }
         f = true;
         match search(d, -beta, -alpha, depth - 1) {
@@ -158,8 +155,10 @@ unsafe fn search(
                 if x > alpha {
                     // this move caused a cutoff, so increase the history value
                     // so it gets ordered high next time so we can search it
-                    d.history[d.gen_dat[i].m.b.from as usize]
-                        [d.gen_dat[i].m.b.to as usize] += depth;
+                    unsafe {
+                        d.history[d.gen_dat[i].m.b.from as usize]
+                            [d.gen_dat[i].m.b.to as usize] += depth;
+                    }
                     if x >= beta {
                         return SearchResult::Value(beta);
                     }
@@ -198,12 +197,12 @@ unsafe fn search(
 /// idea is to find a position where there isn't a lot going on so the static
 /// evaluation function will work.
 
-unsafe fn quiesce(d: &mut Data, alpha: Int, beta: Int) -> SearchResult {
+fn quiesce(d: &mut Data, alpha: Int, beta: Int) -> SearchResult {
     d.nodes += 1;
 
     // do some housekeeping every 1024 nodes
     if (d.nodes & 1023) == 0 {
-        if !checkup(&d) {
+        if !checkup(d) {
             return SearchResult::Timeout;
         }
     }
@@ -212,14 +211,14 @@ unsafe fn quiesce(d: &mut Data, alpha: Int, beta: Int) -> SearchResult {
 
     // are we too deep?
     if d.ply >= MAX_PLY - 1 {
-        return SearchResult::Value(eval(&d));
+        return SearchResult::Value(eval(d));
     }
     if d.hply >= HIST_STACK - 1 {
-        return SearchResult::Value(eval(&d));
+        return SearchResult::Value(eval(d));
     }
 
     // check with the evaluation function
-    let mut x = eval(&d);
+    let mut x = eval(d);
     if x >= beta {
         return SearchResult::Value(beta);
     }
@@ -237,8 +236,10 @@ unsafe fn quiesce(d: &mut Data, alpha: Int, beta: Int) -> SearchResult {
     // loop through the moves
     for i in d.first_move[d.ply]..d.first_move[d.ply + 1] {
         sort(d, i);
-        if !makemove(d, d.gen_dat[i].m.b) {
-            continue;
+        unsafe {
+            if !makemove(d, d.gen_dat[i].m.b) {
+                continue;
+            }
         }
         match quiesce(d, -beta, -alpha) {
             SearchResult::Timeout => {
@@ -269,7 +270,7 @@ unsafe fn quiesce(d: &mut Data, alpha: Int, beta: Int) -> SearchResult {
 /// reps() returns the number of times the current position has been repeated.
 /// It compares the current value of hash to previous values.
 
-pub unsafe fn reps(d: &Data) -> Int {
+pub fn reps(d: &Data) -> Int {
     let mut r = 0;
     for i in (d.hply - d.fifty as usize)..d.hply {
         if d.hist_dat[i].hash == d.hash {
@@ -285,13 +286,15 @@ pub unsafe fn reps(d: &Data) -> Int {
 /// first by the search function. If not, follow_pv remains false and search()
 /// stops calling sort_pv().
 
-unsafe fn sort_pv(d: &mut Data) {
+fn sort_pv(d: &mut Data) {
     d.follow_pv = false;
     for i in d.first_move[d.ply]..d.first_move[d.ply + 1] {
-        if d.gen_dat[i].m.u == d.pv[0][d.ply].u {
-            d.follow_pv = true;
-            d.gen_dat[i].score += 10000000;
-            return;
+        unsafe {
+            if d.gen_dat[i].m.u == d.pv[0][d.ply].u {
+                d.follow_pv = true;
+                d.gen_dat[i].score += 10000000;
+                return;
+            }
         }
     }
 }
@@ -301,7 +304,7 @@ unsafe fn sort_pv(d: &mut Data) {
 /// so the move with the highest score gets searched next, and hopefully
 /// produces a cutoff.
 
-unsafe fn sort(d: &mut Data, from: usize) {
+fn sort(d: &mut Data, from: usize) {
     let mut bs = -1; // best score
     let mut bi = from; // best i
     for i in from..d.first_move[d.ply + 1] {
@@ -318,10 +321,9 @@ unsafe fn sort(d: &mut Data, from: usize) {
 // checkup() is called once in a while during the search. If it returns false,
 // the search time is up.
 
-unsafe fn checkup(d: &Data) -> bool {
+fn checkup(d: &Data) -> bool {
     // is the engine's time up? if so, unwind back to think()
     if get_ms() >= d.stop_time {
-        STOP_SEARCH = true;
         return false;
     }
     true

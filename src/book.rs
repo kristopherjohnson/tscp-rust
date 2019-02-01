@@ -16,22 +16,24 @@ use crate::{move_str, parse_move};
 
 // #rust The original C code keeps the book.txt file open throughout the
 // lifetime of the program and re-reads its contents whenever it wants to look
-// up a book move. In the Rust translation, we read the file's lines into a Vec
-// at initialization, close the file, and use that in-memory collection.
-
-static mut BOOK_LINES: Option<Vec<String>> = None;
+// up a book move. In the Rust translation, we read the file's lines into
+// Data.book_lines at initialization, close the file, and use that in-memory
+// collection from then on.
 
 /// open_book() opens the opening book file and initializes the random number
 /// generator so we play random book moves.
 
-pub unsafe fn open_book() {
-    libc::srand(libc::time(ptr::null_mut()) as u32);
+pub fn open_book(d: &mut Data) {
+    unsafe {
+        // srand(time(NULL));
+        libc::srand(libc::time(ptr::null_mut()) as u32);
+    }
 
     let f = match File::open("book.txt") {
         Ok(file) => file,
         Err(err) => {
             println!("Opening book missing: {}.", err);
-            BOOK_LINES = None;
+            d.book_lines = Vec::new();
             return;
         }
     };
@@ -41,14 +43,13 @@ pub unsafe fn open_book() {
         .lines()
         .map(|line| line.expect("unable to read line from book.txt"))
         .collect();
-
-    BOOK_LINES = Some(lines);
+    d.book_lines = lines;
 }
 
 /// close_book() closes the book file. This is called when the program exits.
 
-pub unsafe fn close_book() {
-    BOOK_LINES = None;
+pub fn close_book(d: &mut Data) {
+    d.book_lines = Vec::new();
 }
 
 /// book_move() returns a book move (in integer format) or -1 if there is no
@@ -58,11 +59,6 @@ pub unsafe fn book_move(d: &Data) -> Int {
     if d.hply > 25 {
         return -1;
     }
-
-    let book_lines = match &BOOK_LINES {
-        Some(lines) => lines,
-        None => return -1,
-    };
 
     // #rust In C, this variable is just "move", but that is a reserved word in
     // Rust.
@@ -79,7 +75,7 @@ pub unsafe fn book_move(d: &Data) -> Int {
     }
 
     // compare line to each line in the opening book
-    for book_line in book_lines.iter() {
+    for book_line in d.book_lines.iter() {
         // #rust The C code has a function book_match() to check whether the
         // prefix matches, but in Rust we can just call the standard library's
         // starts_with() method.

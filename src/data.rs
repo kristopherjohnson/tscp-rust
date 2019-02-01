@@ -84,6 +84,9 @@ pub struct Data {
     pub hash_piece: [[[Int; 64]; 6]; 2],
     pub hash_side: Int,
     pub hash_ep: [Int; 64],
+
+    /// opening book
+    pub book_lines: Vec<String>,
 }
 
 impl Data {
@@ -126,6 +129,7 @@ impl Data {
             hash_piece: [[[0; 64]; 6]; 2],
             hash_side: 0,
             hash_ep: [0; 64],
+            book_lines: Vec::new(),
         }
     }
 }

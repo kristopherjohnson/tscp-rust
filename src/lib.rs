@@ -59,16 +59,10 @@ pub fn tscp_main() {
     }
 
     let mut d = Data::new();
-
-    // #rust TODO: Due to use of static mutable variables in the `data` module,
-    // everything has to be marked "unsafe".  We know our usage is safe because
-    // the program runs in a single thread, but we should eventually change the
-    // members of the `data` module to be structs with associated methods and
-    // minimize the amount of code considered unsafe in Rust.
+    init_hash(&mut d);
+    init_board(&mut d);
     unsafe {
-        init_hash(&mut d);
-        init_board(&mut d);
-        open_book();
+        open_book(&mut d);
         gen(&mut d);
         let mut computer_side = EMPTY;
         d.max_time = 1 << 25;
@@ -209,7 +203,7 @@ pub fn tscp_main() {
                 }
             }
         }
-        close_book()
+        close_book(&mut d);
     }
 }
 
@@ -524,7 +518,7 @@ unsafe fn bench(d: &mut Data) {
 
     // setting the position to a non-initial position confuses the opening book
     // code.
-    close_book();
+    close_book(d);
 
     for i in 0..64 {
         d.color[i] = BENCH_COLOR[i];
@@ -570,6 +564,6 @@ unsafe fn bench(d: &mut Data) {
     );
 
     init_board(d);
-    open_book();
+    open_book(d);
     gen(d);
 }

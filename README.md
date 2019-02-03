@@ -50,6 +50,7 @@ contact me:
 - WWW: http://www.tckerrigan.com/
 
 I hope you find TSCP useful!
+
 -Tom
 
 ## LEGAL STUFF
@@ -81,8 +82,13 @@ The following people have helped me with TSCP:
 - Uri Blass
 - Dann Corbit
 - Pedro Castro Elgarresta
+- Kristopher Johnson
 
 ## VERSION HISTORY
+
+Version 1.81c, 1/3/19
+
+* Fixed the makefile so it compiles the .c files with optimizations.
 
 Version 1.81b, 3/10/16
 

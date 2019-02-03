@@ -1,6 +1,6 @@
 Tom Kerrigan's Simple Chess Program (TSCP)
 
-Copyright 2016 Tom Kerrigan
+Copyright 2019 Tom Kerrigan
 
 (Rust port by Kristopher Johnson)
 

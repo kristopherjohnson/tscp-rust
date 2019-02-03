@@ -46,8 +46,8 @@ pub fn tscp_main() {
     const BANNER: [&'static str; 9] = [
         "",
         "Tom Kerrigan's Simple Chess Program (TSCP)",
-        "version 1.81b, 3/10/16",
-        "Copyright 2016 Tom Kerrigan",
+        "version 1.81c, 2/3/19",
+        "Copyright 2019 Tom Kerrigan",
         "",
         "(Rust port by Kristopher Johnson)",
         "",

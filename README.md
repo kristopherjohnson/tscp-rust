@@ -210,7 +210,8 @@ the Rust translation.
 
 These stylistic rules have been applied during the translation:
 
-- The Rust code follows the naming conventions specified in [RFC #430](https://github.com/rust-lang/rfcs/blob/master/text/0430-finalizing-naming-conventions.md).  Static variables are in `SCREAMING_SNAKE_CASE` and type names are in `UpperCamelCase`.  So, for example, the C global variable `gen_dat` has been renamed `GEN_DAT` in the Rust code, and the C `struct move_bytes` type has been renamed `struct MoveBytes` in Rust.
+- The Rust code follows the naming conventions specified in [RFC #430](https://github.com/rust-lang/rfcs/blob/master/text/0430-finalizing-naming-conventions.md).  Static variables are in `SCREAMING_SNAKE_CASE` and type names are in `UpperCamelCase`.  So, for example, the C global variable `piece_char` has been renamed `PIECE_CHAR` in the Rust code, and the C `struct move_bytes` type has been renamed `struct MoveBytes` in Rust.
+- The mutable global and static variables in the C code have all been packaged into a `struct Data` that is passed into all functions that need access to "global data", to avoid the need to treat them as `unsafe` in Rust.
 - Comments have been reformatted as Rust-style comments.
 - The `rustfmt` tool is used to automatically reformat Rust code in a consistent style.
 - This README file was converted from plain ASCII text to Markdown format, for easier reading on GitHub.

@@ -318,8 +318,9 @@ fn print_board(d: &Data) {
 fn xboard(d: &mut Data) {
     let mut post = 0;
 
-    // #rust TODO: Find a way to do this in Rust:
-    //signal(SIGINT, SIG_IGN);
+    unsafe {
+        libc::signal(libc::SIGINT, libc::SIG_IGN);
+    }
     println!("");
     init_board(d);
     gen(d);

@@ -86,7 +86,7 @@ The following people have helped me with TSCP:
 
 ## VERSION HISTORY
 
-Version 1.81c, 1/3/19
+Version 1.81c, 2/3/19
 
 * Fixed the makefile so it compiles the .c files with optimizations.
 

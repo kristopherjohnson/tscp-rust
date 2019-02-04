@@ -113,7 +113,7 @@ pub fn book_move(d: &Data) -> Int {
     // Think of total_count as the set of matching book lines. Randomly pick one
     // of those lines (j) and figure out which move j "corresponds" to.
     unsafe {
-        j = libc::rand() % (total_count as i32);
+        j = (libc::rand() % (total_count as i32)) as Int;
     }
     for i in 0..(moves as usize) {
         j -= count[i];

@@ -62,10 +62,10 @@ pub fn init_hash(d: &mut Data) {
 /// we have good coverage of all 32 bits. (rand() returns 16-bit numbers
 /// on some systems.)
 fn hash_rand() -> Int {
-    let mut r = 0;
+    let mut r: Int = 0;
     unsafe {
         for _ in 0..32 {
-            r ^= libc::rand() << 1;
+            r ^= (libc::rand() << 1) as Int;
         }
     }
     r
@@ -202,7 +202,7 @@ pub fn gen(d: &mut Data) {
                 }
             } else {
                 for j in 0..(OFFSETS[d.piece[i] as usize] as usize) {
-                    let mut n = i as i32;
+                    let mut n = i as Int;
                     loop {
                         let m64 = MAILBOX64[n as usize];
                         let offset = OFFSET[d.piece[i] as usize][j];
@@ -311,7 +311,7 @@ pub fn gen_caps(d: &mut Data) {
                 }
             } else {
                 for j in 0..(OFFSETS[d.piece[i] as usize] as usize) {
-                    let mut n = i as i32;
+                    let mut n = i as Int;
                     loop {
                         let m64 = MAILBOX64[n as usize];
                         let offset = OFFSET[d.piece[i] as usize][j];

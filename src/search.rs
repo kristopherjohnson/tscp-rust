@@ -18,18 +18,25 @@ use std::io::{stdout, Write};
 /// if thinking-time expires during search().  Rust doesn't make it easy to use
 /// setjmp/longjmp, so instead our search() will return Timeout in that case.
 
+#[derive(Copy, Clone)]
 enum SearchResult {
     Value(Int),
     Timeout,
 }
 
-// think() calls search() iteratively. Search statistics are printed depending
-// on the value of output:
-// 0 = no output
-// 1 = normal output
-// 2 = xboard format output
+/// output options for think()
 
-pub fn think(d: &mut Data, output: Int) {
+#[derive(PartialEq, Copy, Clone)]
+pub enum ThinkOutput {
+    None,
+    Normal,
+    Xboard,
+}
+
+/// think() calls search() iteratively. Search statistics are printed depending
+/// on the value of output.
+
+pub fn think(d: &mut Data, output: ThinkOutput) {
     // try the opening book first
     d.pv[0][0].set_value(book_move(&d));
     if d.pv[0][0].value() != -1 {
@@ -44,7 +51,7 @@ pub fn think(d: &mut Data, output: Int) {
 
     d.pv = [[Move { u: 0 }; MAX_PLY]; MAX_PLY];
     d.history = [[0; 64]; 64];
-    if output == 1 {
+    if output == ThinkOutput::Normal {
         println!("ply      nodes  score  pv");
     }
     for i in 1..=d.max_depth {
@@ -58,18 +65,22 @@ pub fn think(d: &mut Data, output: Int) {
                 return;
             }
             SearchResult::Value(x) => {
-                if output == 1 {
-                    print!("{:3}  {:9}  {:5} ", i, d.nodes, x);
-                } else if output == 2 {
-                    print!(
-                        "{} {} {} {}",
-                        i,
-                        x,
-                        (get_ms() - d.start_time) / 10,
-                        d.nodes
-                    );
+                match output {
+                    ThinkOutput::None => {}
+                    ThinkOutput::Normal => {
+                        print!("{:3}  {:9}  {:5} ", i, d.nodes, x);
+                    }
+                    ThinkOutput::Xboard => {
+                        print!(
+                            "{} {} {} {}",
+                            i,
+                            x,
+                            (get_ms() - d.start_time) / 10,
+                            d.nodes
+                        );
+                    }
                 }
-                if output != 0 {
+                if output != ThinkOutput::None {
                     for j in 0..d.pv_length[0] {
                         print!(" {}", move_str(d.pv[0][j].bytes()));
                     }

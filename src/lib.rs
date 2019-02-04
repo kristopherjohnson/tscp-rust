@@ -29,7 +29,7 @@ use crate::book::{close_book, open_book};
 use crate::data::{Data, PIECE_CHAR};
 use crate::defs::{Int, MoveBytes, BISHOP, DARK, EMPTY, KNIGHT, LIGHT, ROOK};
 use crate::scan::{scan_int, scan_token};
-use crate::search::{reps, think};
+use crate::search::{reps, think, ThinkOutput};
 
 /// get_ms() returns the milliseconds elapsed since midnight, January 1, 1970
 
@@ -71,7 +71,7 @@ pub fn tscp_main() {
             // computer's turn
 
             // think about the move and make it
-            think(&mut d, 1);
+            think(&mut d, ThinkOutput::Normal);
             if d.pv[0][0].value() == 0 {
                 println!("(no legal moves");
                 computer_side = EMPTY;
@@ -316,7 +316,7 @@ fn print_board(d: &Data) {
 // http://www.research.digital.com/SRC/personal/mann/xboard/engine-intf.html
 
 fn xboard(d: &mut Data) {
-    let mut post = 0;
+    let mut post = ThinkOutput::None;
 
     unsafe {
         libc::signal(libc::SIGINT, libc::SIG_IGN);
@@ -415,7 +415,7 @@ fn xboard(d: &mut Data) {
                 computer_side = d.side;
             }
             "hint" => {
-                think(d, 0);
+                think(d, ThinkOutput::None);
                 if d.pv[0][0].value() == 0 {
                     continue;
                 }
@@ -439,10 +439,10 @@ fn xboard(d: &mut Data) {
                 gen(d);
             }
             "post" => {
-                post = 2;
+                post = ThinkOutput::Xboard;
             }
             "nopost" => {
-                post = 0;
+                post = ThinkOutput::None;
             }
             _ => {
                 let m = parse_move(&d, &command);
@@ -542,7 +542,7 @@ fn bench(d: &mut Data) {
     d.max_time = 1 << 25;
     d.max_depth = 5;
     for i in 0..3 {
-        think(d, 1);
+        think(d, ThinkOutput::Normal);
         t[i] = (get_ms() - d.start_time) as Int;
         println!("Time: {} ms", t[i]);
     }

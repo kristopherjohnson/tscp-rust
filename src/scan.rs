@@ -41,12 +41,12 @@ pub fn scan_token() -> io::Result<String> {
 /// ```
 /// use tscp::scan::scan_token_from;
 ///
-/// let input = String::from("  one   two three  ");
-/// let mut bytes = input.as_bytes();
-/// assert_eq!(scan_token_from(&mut bytes).unwrap(), "one");
-/// assert_eq!(scan_token_from(&mut bytes).unwrap(), "two");
-/// assert_eq!(scan_token_from(&mut bytes).unwrap(), "three");
-/// assert_eq!(scan_token_from(&mut bytes).unwrap(), "");
+/// let s = String::from("  one   two three  ");
+/// let mut reader = s.as_bytes();
+/// assert_eq!(scan_token_from(&mut reader).unwrap(), "one");
+/// assert_eq!(scan_token_from(&mut reader).unwrap(), "two");
+/// assert_eq!(scan_token_from(&mut reader).unwrap(), "three");
+/// assert_eq!(scan_token_from(&mut reader).unwrap(), "");
 /// ```
 
 pub fn scan_token_from(reader: &mut Read) -> io::Result<String> {
@@ -118,11 +118,11 @@ pub fn scan_int() -> io::Result<Int> {
 /// ```
 /// use tscp::scan::scan_int_from;
 ///
-/// let input = String::from("  123  456 789  ");
-/// let mut bytes = input.as_bytes();
-/// assert_eq!(scan_int_from(&mut bytes).unwrap(), 123);
-/// assert_eq!(scan_int_from(&mut bytes).unwrap(), 456);
-/// assert_eq!(scan_int_from(&mut bytes).unwrap(), 789);
+/// let s = String::from("  123  456 789  ");
+/// let mut reader = s.as_bytes();
+/// assert_eq!(scan_int_from(&mut reader).unwrap(), 123);
+/// assert_eq!(scan_int_from(&mut reader).unwrap(), 456);
+/// assert_eq!(scan_int_from(&mut reader).unwrap(), 789);
 /// ```
 
 pub fn scan_int_from(reader: &mut Read) -> io::Result<Int> {

@@ -13,14 +13,14 @@ use std::time::{SystemTime, UNIX_EPOCH};
 extern crate libc;
 
 #[macro_use]
-mod defs;
+pub mod defs;
 
-mod board;
-mod book;
-mod data;
-mod eval;
-mod scan;
-mod search;
+pub mod board;
+pub mod book;
+pub mod data;
+pub mod eval;
+pub mod scan;
+pub mod search;
 
 use crate::board::{
     gen, in_check, init_board, init_hash, makemove, set_hash, takeback,

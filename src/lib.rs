@@ -22,9 +22,7 @@ pub mod eval;
 pub mod scan;
 pub mod search;
 
-use crate::board::{
-    gen, in_check, init_board, init_hash, makemove, set_hash, takeback,
-};
+use crate::board::{gen, in_check, init_board, makemove, set_hash, takeback};
 use crate::book::{close_book, open_book};
 use crate::data::{Data, PIECE_CHAR};
 use crate::defs::{Int, MoveBytes, BISHOP, DARK, EMPTY, KNIGHT, LIGHT, ROOK};
@@ -40,175 +38,10 @@ fn get_ms() -> u128 {
     duration.as_secs() as u128 * 1000 + duration.subsec_millis() as u128
 }
 
-/// tscp command loop.  Called by main().
-
-pub fn tscp_main() {
-    const BANNER: [&'static str; 9] = [
-        "",
-        "Tom Kerrigan's Simple Chess Program (TSCP)",
-        "version 1.81c, 2/3/19",
-        "Copyright 2019 Tom Kerrigan",
-        "",
-        "(Rust port by Kristopher Johnson)",
-        "",
-        "\"help\" displays a list of commands.",
-        "",
-    ];
-    for line in BANNER.iter() {
-        println!("{}", line);
-    }
-
-    let mut d = Data::new();
-    init_hash(&mut d);
-    init_board(&mut d);
-    open_book(&mut d);
-    gen(&mut d);
-    let mut computer_side = EMPTY;
-    d.max_time = 1 << 25;
-    d.max_depth = 4;
-    loop {
-        if d.side == computer_side {
-            // computer's turn
-
-            // think about the move and make it
-            think(&mut d, ThinkOutput::Normal);
-            if d.pv[0][0].value() == 0 {
-                println!("(no legal moves");
-                computer_side = EMPTY;
-                continue;
-            }
-            let m = d.pv[0][0].bytes();
-            println!("Computer's move: {}", move_str(m));
-            makemove(&mut d, m);
-            d.ply = 0;
-            gen(&mut d);
-            print_result(&mut d);
-            continue;
-        }
-
-        // get user input
-        print!("tscp> ");
-        io::stdout().flush().expect("unable to flush prompt output");
-        let s = match scan_token() {
-            Ok(s) => s,
-            Err(err) => {
-                println!("input error: {}", err);
-                return;
-            }
-        };
-        if s.len() == 0 {
-            // EOF
-            return;
-        }
-        match s.as_ref() {
-            "on" => {
-                computer_side = d.side;
-                continue;
-            }
-            "off" => {
-                computer_side = EMPTY;
-                continue;
-            }
-            "st" => {
-                let n = match scan_int() {
-                    Ok(n) => n,
-                    Err(err) => {
-                        println!("unable to read st argument: {}", err);
-                        return;
-                    }
-                };
-                d.max_time = n * 1000;
-                d.max_depth = 32;
-                continue;
-            }
-            "sd" => {
-                let n = match scan_int() {
-                    Ok(n) => n,
-                    Err(err) => {
-                        println!("unable to read sd argument: {}", err);
-                        return;
-                    }
-                };
-                d.max_depth = n;
-                d.max_time = 1 << 25;
-                continue;
-            }
-            "undo" => {
-                if d.hply == 0 {
-                    continue;
-                }
-                computer_side = EMPTY;
-                takeback(&mut d);
-                d.ply = 0;
-                gen(&mut d);
-                continue;
-            }
-            "new" => {
-                computer_side = EMPTY;
-                init_board(&mut d);
-                gen(&mut d);
-                continue;
-            }
-            "d" => {
-                print_board(&d);
-                continue;
-            }
-            "bench" => {
-                computer_side = EMPTY;
-                bench(&mut d);
-                continue;
-            }
-            "bye" => {
-                println!("Share and enjoy!");
-                break;
-            }
-            "xboard" => {
-                xboard(&mut d);
-                break;
-            }
-            "help" => {
-                const HELP: [&'static str; 11] = [
-                    "on - computer plays for the side to move",
-                    "off - computer stops playing",
-                    "st n - search for n seconds per move",
-                    "sd n - search n ply per move",
-                    "undo - takes back a move",
-                    "new - starts a new game",
-                    "d - display the board",
-                    "bench - run the built-in benchmark",
-                    "bye - exit the program",
-                    "xboard - switch to XBoard mode",
-                    "Enter moves in coordinate notation, e.g., e2e4, e7e8Q",
-                ];
-                for line in HELP.iter() {
-                    println!("{}", line);
-                }
-            }
-            _ => {
-                // maybe the user entered a move?
-                let m = parse_move(&d, &s);
-                if m == -1 {
-                    println!("Illegal move.");
-                } else {
-                    let m = d.gen_dat[m as usize].m.bytes();
-                    if !makemove(&mut d, m) {
-                        println!("Illegal move.");
-                    } else {
-                        d.ply = 0;
-                        gen(&mut d);
-                        print_result(&mut d);
-                    }
-                }
-            }
-        }
-    }
-    close_book(&mut d);
-}
-
 /// parse the move s (in coordinate notation) and return the move's index in
 /// d.gen_dat, or -1 if the move is illegal
 
-fn parse_move(d: &Data, s: &str) -> Int {
+pub fn parse_move(d: &Data, s: &str) -> Int {
     // convert string to vector of characters
     let s: Vec<char> = String::from(s).chars().collect();
 
@@ -261,7 +94,7 @@ fn parse_move(d: &Data, s: &str) -> Int {
 
 /// move_str returns a string with move m in coordinate notation
 
-fn move_str(m: MoveBytes) -> String {
+pub fn move_str(m: MoveBytes) -> String {
     unsafe {
         let from_col =
             char::from_u32_unchecked(col!(m.from) as u32 + 'a' as u32);
@@ -285,7 +118,7 @@ fn move_str(m: MoveBytes) -> String {
 
 /// print_board() prints the board
 
-fn print_board(d: &Data) {
+pub fn print_board(d: &Data) {
     print!("\n8 ");
     for i in 0..64 {
         match d.color[i] {
@@ -311,11 +144,11 @@ fn print_board(d: &Data) {
     print!("\n\n   a b c d e f g h\n\n");
 }
 
-// xboard() is a substitute for main() that is XBoard and WinBoard compatible.
-// See the following page for details:
-// http://www.research.digital.com/SRC/personal/mann/xboard/engine-intf.html
+/// xboard() is a substitute for main() that is XBoard and WinBoard compatible.
+/// See the following page for details:
+/// <http://www.research.digital.com/SRC/personal/mann/xboard/engine-intf.html>
 
-fn xboard(d: &mut Data) {
+pub fn xboard(d: &mut Data) {
     let mut post = ThinkOutput::None;
 
     unsafe {
@@ -465,7 +298,7 @@ fn xboard(d: &mut Data) {
 
 /// print_result() checks to see if the game is over, and if so, prints the result.
 
-fn print_result(d: &mut Data) {
+pub fn print_result(d: &mut Data) {
     let mut i = 0;
     while i < d.first_move[1] {
         if makemove(d, d.gen_dat[i].m.bytes()) {
@@ -491,10 +324,6 @@ fn print_result(d: &mut Data) {
     }
 }
 
-// bench: This is a little benchmark code that calculates how many nodes per
-// second TSCP searches.  It sets the position to move 17 of Bobby Fischer vs.
-// J. Sherwin, New Jersey State Open Championship, 9/2/1957.  Then it searches
-// five ply three times. It calculates nodes per second from the best time. */
 #[rustfmt::skip]
 const BENCH_COLOR: [Int; 64] = [
     6, 1, 1, 6, 6, 1, 1, 6,
@@ -519,7 +348,12 @@ const BENCH_PIECE: [Int; 64] = [
     3, 6, 2, 6, 3, 6, 5, 6
 ];
 
-fn bench(d: &mut Data) {
+/// bench: This is a little benchmark code that calculates how many nodes per
+/// second TSCP searches.  It sets the position to move 17 of Bobby Fischer vs.
+/// J. Sherwin, New Jersey State Open Championship, 9/2/1957.  Then it searches
+/// five ply three times. It calculates nodes per second from the best time.
+
+pub fn bench(d: &mut Data) {
     let mut t: [Int; 3] = [0; 3];
 
     // setting the position to a non-initial position confuses the opening book

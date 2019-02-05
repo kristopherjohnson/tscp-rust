@@ -81,7 +81,7 @@ pub fn book_move(d: &Data) -> Int {
         // starts_with() method.
         if book_line.starts_with(&line) {
             // parse the book move that continues the line
-            let m = parse_move(&d, &book_line[line.len()..]);
+            let m = parse_move(d, &book_line[line.len()..]);
             if m == -1 {
                 continue;
             }

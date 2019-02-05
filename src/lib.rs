@@ -279,7 +279,7 @@ pub fn xboard(d: &mut Data) {
                 post = NoOutput;
             }
             _ => {
-                let m = parse_move(&d, &command);
+                let m = parse_move(d, &command);
                 if m == -1 {
                     println!("Error (unknown command): {}", command);
                 } else {
@@ -309,7 +309,7 @@ pub fn print_result(d: &mut Data) {
         i += 1;
     }
     if i == d.first_move[1] {
-        if in_check(&d, d.side) {
+        if in_check(d, d.side) {
             if d.side == LIGHT {
                 println!("0-1 {{Black mates}}");
             } else {
@@ -318,7 +318,7 @@ pub fn print_result(d: &mut Data) {
         } else {
             println!("1/2-1/2 {{Stalemate}}");
         }
-    } else if reps(&d) == 2 {
+    } else if reps(d) == 2 {
         println!("1/2-1/2 {{Draw by repetition}}");
     } else if d.fifty >= 100 {
         println!("1/2-1/2 {{Draw by fifty move rule}}");

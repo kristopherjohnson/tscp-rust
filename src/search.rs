@@ -38,7 +38,7 @@ pub enum ThinkOutput {
 
 pub fn think(d: &mut Data, output: ThinkOutput) {
     // try the opening book first
-    d.pv[0][0].set_value(book_move(&d));
+    d.pv[0][0].set_value(book_move(d));
     if d.pv[0][0].value() != -1 {
         return;
     }
@@ -117,7 +117,7 @@ fn search(d: &mut Data, alpha: Int, beta: Int, depth: Int) -> SearchResult {
     // if this isn't the root of the search tree (where we have to pick a move
     // and can't simply return 0) then check to see if the position is a repeat.
     // if so, we can assume that this line is a draw and return 0.
-    if d.ply != 0 && reps(&d) != 0 {
+    if d.ply != 0 && reps(d) != 0 {
         return SearchResult::Value(0);
     }
 
@@ -131,7 +131,7 @@ fn search(d: &mut Data, alpha: Int, beta: Int, depth: Int) -> SearchResult {
 
     // are we in check? if so, we want to search deeper
     let mut depth = depth;
-    let c = in_check(&d, d.side);
+    let c = in_check(d, d.side);
     if c {
         depth += 1;
     }

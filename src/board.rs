@@ -106,7 +106,7 @@ pub fn set_hash(d: &mut Data) {
 pub fn in_check(d: &Data, s: Int) -> bool {
     for i in 0..64 {
         if d.piece[i] == KING && d.color[i] == s {
-            return attack(&d, i, s ^ 1);
+            return attack(d, i, s ^ 1);
         }
     }
     panic!("in_check: shouldn't get here");

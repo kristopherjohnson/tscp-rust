@@ -28,9 +28,9 @@ enum SearchResult {
 
 #[derive(PartialEq, Copy, Clone)]
 pub enum ThinkOutput {
-    None,
-    Normal,
-    Xboard,
+    NoOutput,
+    NormalOutput,
+    XboardOutput,
 }
 
 /// think() calls search() iteratively. Search statistics are printed depending
@@ -51,7 +51,7 @@ pub fn think(d: &mut Data, output: ThinkOutput) {
 
     d.pv = [[Move { u: 0 }; MAX_PLY]; MAX_PLY];
     d.history = [[0; 64]; 64];
-    if output == ThinkOutput::Normal {
+    if output == ThinkOutput::NormalOutput {
         println!("ply      nodes  score  pv");
     }
     for i in 1..=d.max_depth {
@@ -66,11 +66,11 @@ pub fn think(d: &mut Data, output: ThinkOutput) {
             }
             SearchResult::Value(x) => {
                 match output {
-                    ThinkOutput::None => {}
-                    ThinkOutput::Normal => {
+                    ThinkOutput::NoOutput => {}
+                    ThinkOutput::NormalOutput => {
                         print!("{:3}  {:9}  {:5} ", i, d.nodes, x);
                     }
-                    ThinkOutput::Xboard => {
+                    ThinkOutput::XboardOutput => {
                         print!(
                             "{} {} {} {}",
                             i,
@@ -80,7 +80,7 @@ pub fn think(d: &mut Data, output: ThinkOutput) {
                         );
                     }
                 }
-                if output != ThinkOutput::None {
+                if output != ThinkOutput::NoOutput {
                     for j in 0..d.pv_length[0] {
                         print!(" {}", move_str(d.pv[0][j].bytes()));
                     }

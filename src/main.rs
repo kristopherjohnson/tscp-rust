@@ -13,7 +13,8 @@ use tscp::book::{close_book, open_book};
 use tscp::data::Data;
 use tscp::defs::EMPTY;
 use tscp::scan::{scan_int, scan_token};
-use tscp::search::{think, ThinkOutput};
+use tscp::search::think;
+use tscp::search::ThinkOutput::*;
 use tscp::{bench, move_str, parse_move, print_board, print_result, xboard};
 
 fn main() {
@@ -45,7 +46,7 @@ fn main() {
             // computer's turn
 
             // think about the move and make it
-            think(&mut d, ThinkOutput::Normal);
+            think(&mut d, NormalOutput);
             if d.pv[0][0].value() == 0 {
                 println!("(no legal moves");
                 computer_side = EMPTY;

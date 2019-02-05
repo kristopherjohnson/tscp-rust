@@ -27,7 +27,8 @@ use crate::book::{close_book, open_book};
 use crate::data::{Data, PIECE_CHAR};
 use crate::defs::{Int, MoveBytes, BISHOP, DARK, EMPTY, KNIGHT, LIGHT, ROOK};
 use crate::scan::{scan_int, scan_token};
-use crate::search::{reps, think, ThinkOutput};
+use crate::search::ThinkOutput::*;
+use crate::search::{reps, think};
 
 /// get_ms() returns the milliseconds elapsed since midnight, January 1, 1970
 
@@ -149,7 +150,7 @@ pub fn print_board(d: &Data) {
 /// <http://www.research.digital.com/SRC/personal/mann/xboard/engine-intf.html>
 
 pub fn xboard(d: &mut Data) {
-    let mut post = ThinkOutput::None;
+    let mut post = NoOutput;
 
     unsafe {
         libc::signal(libc::SIGINT, libc::SIG_IGN);
@@ -248,7 +249,7 @@ pub fn xboard(d: &mut Data) {
                 computer_side = d.side;
             }
             "hint" => {
-                think(d, ThinkOutput::None);
+                think(d, NoOutput);
                 if d.pv[0][0].value() == 0 {
                     continue;
                 }
@@ -272,10 +273,10 @@ pub fn xboard(d: &mut Data) {
                 gen(d);
             }
             "post" => {
-                post = ThinkOutput::Xboard;
+                post = XboardOutput;
             }
             "nopost" => {
-                post = ThinkOutput::None;
+                post = NoOutput;
             }
             _ => {
                 let m = parse_move(&d, &command);
@@ -376,7 +377,7 @@ pub fn bench(d: &mut Data) {
     d.max_time = 1 << 25;
     d.max_depth = 5;
     for i in 0..3 {
-        think(d, ThinkOutput::Normal);
+        think(d, NormalOutput);
         t[i] = (get_ms() - d.start_time) as Int;
         println!("Time: {} ms", t[i]);
     }

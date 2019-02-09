@@ -18,7 +18,7 @@ use tscp::search::ThinkOutput::*;
 use tscp::{bench, move_str, parse_move, print_board, print_result, xboard};
 
 fn main() {
-    const BANNER: [&'static str; 9] = [
+    const BANNER: [&str; 9] = [
         "",
         "Tom Kerrigan's Simple Chess Program (TSCP)",
         "version 1.81c, 2/3/19",
@@ -142,7 +142,7 @@ fn main() {
                 break;
             }
             "help" => {
-                const HELP: [&'static str; 11] = [
+                const HELP: [&str; 11] = [
                     "on - computer plays for the side to move",
                     "off - computer stops playing",
                     "st n - search for n seconds per move",

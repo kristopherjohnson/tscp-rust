@@ -18,6 +18,7 @@ pub mod defs;
 pub mod board;
 pub mod book;
 pub mod data;
+pub mod engine;
 pub mod eval;
 pub mod scan;
 pub mod search;

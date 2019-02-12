@@ -15,6 +15,7 @@ use crate::defs::{
 
 /// the board representation
 
+#[derive(Clone)]
 pub struct Data {
     /// LIGHT, DARK, or EMPTY
     pub color: [Int; 64],

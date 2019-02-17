@@ -68,7 +68,7 @@ macro_rules! col {
 /// It's union'ed with an integer so two moves can easily
 /// be compared with each other.
 
-#[derive(Copy, Clone)]
+#[derive(Debug, Copy, Clone)]
 pub struct MoveBytes {
     pub from: u8,
     pub to: u8,

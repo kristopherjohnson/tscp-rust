@@ -26,7 +26,7 @@ enum SearchResult {
 
 /// output options for think()
 
-#[derive(PartialEq, Copy, Clone)]
+#[derive(Debug, PartialEq, Copy, Clone)]
 pub enum ThinkOutput {
     NoOutput,
     NormalOutput,

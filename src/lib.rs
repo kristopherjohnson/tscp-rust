@@ -5,12 +5,12 @@
 //
 // Rust port by Kristopher Johnson
 
+extern crate libc;
+
 use std::char;
 use std::io;
 use std::io::prelude::*;
 use std::time::{SystemTime, UNIX_EPOCH};
-
-extern crate libc;
 
 #[macro_use]
 pub mod defs;

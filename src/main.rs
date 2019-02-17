@@ -8,14 +8,13 @@
 use std::io;
 use std::io::prelude::*;
 
-use tscp::board::{gen, init_board, init_hash, makemove, takeback};
-use tscp::book::{close_book, open_book};
+use tscp::board::{gen, init_board, init_hash};
 use tscp::data::Data;
 use tscp::defs::EMPTY;
+use tscp::engine::Engine;
 use tscp::scan::{scan_int, scan_token};
-use tscp::search::think;
 use tscp::search::ThinkOutput::*;
-use tscp::{bench, move_str, parse_move, print_board, print_result, xboard};
+use tscp::{bench, move_str, xboard};
 
 fn main() {
     const BANNER: [&str; 9] = [
@@ -33,31 +32,32 @@ fn main() {
         println!("{}", line);
     }
 
-    let mut d = Data::new();
-    init_hash(&mut d);
-    init_board(&mut d);
-    open_book(&mut d);
-    gen(&mut d);
+    let mut e = Engine::new();
+    e.start();
+    e.init_board();
+    e.open_book();
+    e.gen();
+    e.set_max_time_and_depth(1 << 25, 4);
+
     let mut computer_side = EMPTY;
-    d.max_time = 1 << 25;
-    d.max_depth = 4;
     loop {
-        if d.side == computer_side {
+        let (side, _) = e.get_side();
+        if side == computer_side {
             // computer's turn
 
             // think about the move and make it
-            think(&mut d, NormalOutput);
-            if d.pv[0][0].value() == 0 {
+            let computer_move = e.think(NormalOutput);
+            if computer_move.value() == 0 {
                 println!("(no legal moves");
                 computer_side = EMPTY;
                 continue;
             }
-            let m = d.pv[0][0].bytes();
+            let m = computer_move.bytes();
             println!("Computer's move: {}", move_str(m));
-            makemove(&mut d, m);
-            d.ply = 0;
-            gen(&mut d);
-            print_result(&mut d);
+            e.makemove(m);
+            e.clear_ply();
+            e.gen();
+            e.print_result();
             continue;
         }
 
@@ -77,7 +77,8 @@ fn main() {
         }
         match s.as_ref() {
             "on" => {
-                computer_side = d.side;
+                let (side, _) = e.get_side();
+                computer_side = side;
                 continue;
             }
             "off" => {
@@ -92,8 +93,7 @@ fn main() {
                         return;
                     }
                 };
-                d.max_time = n * 1000;
-                d.max_depth = 32;
+                e.set_max_time_and_depth(n * 1000, 32);
                 continue;
             }
             "sd" => {
@@ -104,32 +104,37 @@ fn main() {
                         return;
                     }
                 };
-                d.max_depth = n;
-                d.max_time = 1 << 25;
+                e.set_max_time_and_depth(n, 1 << 25);
                 continue;
             }
             "undo" => {
-                if d.hply == 0 {
+                if !e.can_takeback() {
                     continue;
                 }
                 computer_side = EMPTY;
-                takeback(&mut d);
-                d.ply = 0;
-                gen(&mut d);
+                e.takeback();
+                e.clear_ply();
+                e.gen();
                 continue;
             }
             "new" => {
                 computer_side = EMPTY;
-                init_board(&mut d);
-                gen(&mut d);
+                e.init_board();
+                e.gen();
                 continue;
             }
             "d" => {
-                print_board(&d);
+                e.print_board();
                 continue;
             }
             "bench" => {
                 computer_side = EMPTY;
+                // #rust TODO: Support calling bench() with the engine.  For
+                // now, just initialize a fresh Data instance and use that.
+                let mut d = Data::new();
+                init_hash(&mut d);
+                init_board(&mut d);
+                gen(&mut d);
                 bench(&mut d);
                 continue;
             }
@@ -138,6 +143,12 @@ fn main() {
                 break;
             }
             "xboard" => {
+                // #rust TODO: Support calling bench() with the engine.  For
+                // now, just initialize a fresh Data instance and use that.
+                let mut d = Data::new();
+                init_hash(&mut d);
+                init_board(&mut d);
+                gen(&mut d);
                 xboard(&mut d);
                 break;
             }
@@ -161,21 +172,23 @@ fn main() {
             }
             _ => {
                 // maybe the user entered a move?
-                let m = parse_move(&d, &s);
-                if m == -1 {
-                    println!("Illegal move.");
-                } else {
-                    let m = d.gen_dat[m as usize].m.bytes();
-                    if !makemove(&mut d, m) {
+                match e.parse_move(s) {
+                    None => {
                         println!("Illegal move.");
-                    } else {
-                        d.ply = 0;
-                        gen(&mut d);
-                        print_result(&mut d);
+                    }
+                    Some(m) => {
+                        if !e.makemove(m) {
+                            println!("Illegal move.");
+                        } else {
+                            e.clear_ply();
+                            e.gen();
+                            e.print_result();
+                        }
                     }
                 }
             }
         }
     }
-    close_book(&mut d);
+    e.close_book();
+    e.stop();
 }

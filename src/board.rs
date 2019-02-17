@@ -555,8 +555,14 @@ pub fn makemove(d: &mut Data, m: MoveBytes) -> bool {
 pub fn takeback(d: &mut Data) {
     d.side ^= 1;
     d.xside ^= 1;
-    d.ply -= 1;
-    d.hply -= 1;
+    // #rust Need to avoid underflow of ply and hply, which are unsigned, or
+    // debug builds will panic on an "undo" command in main().
+    if d.ply > 0 {
+        d.ply -= 1
+    };
+    if d.hply > 0 {
+        d.hply -= 1
+    };
     let m = d.hist_dat[d.hply].m.bytes();
     d.castle = d.hist_dat[d.hply].castle;
     d.ep = d.hist_dat[d.hply].ep;

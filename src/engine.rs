@@ -44,7 +44,7 @@ enum Command {
 /// background thread, allowing the main thread to handle I/O operations and
 /// higher-level game logic.
 pub struct Engine {
-    command_sender: Option<Sender<Command>>,
+    command_tx: Option<Sender<Command>>,
     command_thread: Option<JoinHandle<()>>,
 }
 
@@ -61,18 +61,18 @@ impl Engine {
     /// ```
     pub fn new() -> Engine {
         return Engine {
-            command_sender: None,
+            command_tx: None,
             command_thread: None,
         };
     }
 
     /// Start the engine's command-loop thread.
     pub fn start(&mut self) {
-        let (sender, receiver) = channel();
+        let (tx, rx) = channel();
         let handle = thread::spawn(move || {
-            Engine::process_commands(receiver);
+            Engine::process_commands(rx);
         });
-        self.command_sender = Some(sender);
+        self.command_tx = Some(tx);
         self.command_thread = Some(handle);
     }
 
@@ -126,9 +126,9 @@ impl Engine {
     /// Returns the computer's move.  The move may be an "empty" move (`value()
     /// == 0`), indicating there are no legal moves.
     pub fn think(&mut self, output: ThinkOutput) -> Move {
-        let (sender, receiver) = channel();
-        self.send_command(Command::Think(output, sender));
-        return receiver.recv().unwrap();
+        let (tx, rx) = channel();
+        self.send_command(Command::Think(output, tx));
+        return rx.recv().unwrap();
     }
 
     /// Call `board::makemove()` on the engine's data.
@@ -139,9 +139,9 @@ impl Engine {
     /// valid.  If `false` is returned, then no change was made to the engine's
     /// data.
     pub fn makemove(&mut self, m: MoveBytes) -> bool {
-        let (sender, receiver) = channel();
-        self.send_command(Command::MakeMove(m, sender));
-        return receiver.recv().unwrap();
+        let (tx, rx) = channel();
+        self.send_command(Command::MakeMove(m, tx));
+        return rx.recv().unwrap();
     }
 
     /// Reset `data.ply` to zero.
@@ -165,9 +165,9 @@ impl Engine {
     ///
     /// Return `true` if it is valid to call `takeback()`.
     pub fn can_takeback(&self) -> bool {
-        let (sender, receiver) = channel();
-        self.send_command(Command::CanTakeBack(sender));
-        return receiver.recv().unwrap();
+        let (tx, rx) = channel();
+        self.send_command(Command::CanTakeBack(tx));
+        return rx.recv().unwrap();
     }
 
     /// Call `board::takeback()` on the engine's data.
@@ -182,9 +182,9 @@ impl Engine {
     /// Returns None if the string is not a valid move.
     /// Otherwise, returns the specified Move.
     pub fn parse_move(&self, s: String) -> Option<MoveBytes> {
-        let (sender, receiver) = channel();
-        self.send_command(Command::ParseMove(s, sender));
-        return receiver.recv().unwrap();
+        let (tx, rx) = channel();
+        self.send_command(Command::ParseMove(s, tx));
+        return rx.recv().unwrap();
     }
 
     /// Determine which side is making a move.
@@ -194,27 +194,27 @@ impl Engine {
     /// Returns a tuple `(side, xside)`, where `side` is the current side and
     /// `xside` is the opposite side.
     pub fn get_side(&self) -> (Int, Int) {
-        let (sender, receiver) = channel();
-        self.send_command(Command::GetSide(sender));
-        return receiver.recv().unwrap();
+        let (tx, rx) = channel();
+        self.send_command(Command::GetSide(tx));
+        return rx.recv().unwrap();
     }
 
     /// Send a command to the background thread.
     fn send_command(&self, command: Command) {
-        self.command_sender.as_ref().unwrap().send(command).unwrap();
+        self.command_tx.as_ref().unwrap().send(command).unwrap();
     }
 
     /// Process commands until `Command::Stop` is received.
     ///
     /// This function runs in the background thread.
-    fn process_commands(receiver: Receiver<Command>) {
+    fn process_commands(rx: Receiver<Command>) {
         let mut d = Data::new();
         init_hash(&mut d);
         loop {
-            let command = receiver.recv().unwrap();
+            let command = rx.recv().unwrap();
             match command {
-                Command::CanTakeBack(sender) => {
-                    sender.send(d.hply != 0).unwrap();
+                Command::CanTakeBack(tx) => {
+                    tx.send(d.hply != 0).unwrap();
                 }
                 Command::ClearPly => {
                     d.ply = 0;
@@ -222,8 +222,8 @@ impl Engine {
                 Command::CloseBook => {
                     close_book(&mut d);
                 }
-                Command::GetSide(sender) => {
-                    sender.send((d.side, d.xside)).unwrap();
+                Command::GetSide(tx) => {
+                    tx.send((d.side, d.xside)).unwrap();
                 }
                 Command::Gen => {
                     gen(&mut d);
@@ -234,16 +234,16 @@ impl Engine {
                 Command::OpenBook => {
                     open_book(&mut d);
                 }
-                Command::MakeMove(m, sender) => {
-                    sender.send(makemove(&mut d, m)).unwrap();
+                Command::MakeMove(m, tx) => {
+                    tx.send(makemove(&mut d, m)).unwrap();
                 }
-                Command::ParseMove(string, sender) => {
+                Command::ParseMove(string, tx) => {
                     let m = parse_move(&d, &string);
                     if m == -1 {
-                        sender.send(None).unwrap();
+                        tx.send(None).unwrap();
                     } else {
                         let m = d.gen_dat[m as usize].m.bytes();
-                        sender.send(Some(m)).unwrap();
+                        tx.send(Some(m)).unwrap();
                     }
                 }
                 Command::PrintBoard => {
@@ -262,9 +262,9 @@ impl Engine {
                 Command::TakeBack => {
                     takeback(&mut d);
                 }
-                Command::Think(output, sender) => {
+                Command::Think(output, tx) => {
                     think(&mut d, output);
-                    sender.send(d.pv[0][0]).unwrap();
+                    tx.send(d.pv[0][0]).unwrap();
                 }
             }
         }

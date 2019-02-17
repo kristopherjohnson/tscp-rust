@@ -216,7 +216,6 @@ impl Engine {
     fn process_commands(receiver: Receiver<Command>, data: Arc<Mutex<Data>>) {
         loop {
             let command = receiver.recv().unwrap();
-            eprintln!("(Background thread processing {:?})", command);
             match command {
                 Command::CanTakeBack(sender) => {
                     let d = data.lock().unwrap();

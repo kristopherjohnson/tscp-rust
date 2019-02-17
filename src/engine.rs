@@ -10,7 +10,6 @@
 // time, while the main thread is awaiting input.
 
 use std::sync::mpsc::{channel, Receiver, Sender};
-use std::sync::{Arc, Mutex};
 use std::thread;
 use std::thread::JoinHandle;
 
@@ -45,7 +44,6 @@ enum Command {
 /// background thread, allowing the main thread to handle I/O operations and
 /// higher-level game logic.
 pub struct Engine {
-    data: Arc<Mutex<Data>>,
     command_sender: Option<Sender<Command>>,
     command_thread: Option<JoinHandle<()>>,
 }
@@ -62,10 +60,7 @@ impl Engine {
     /// let engine = Engine::new();
     /// ```
     pub fn new() -> Engine {
-        let mut d = Data::new();
-        init_hash(&mut d);
         return Engine {
-            data: Arc::new(Mutex::new(d)),
             command_sender: None,
             command_thread: None,
         };
@@ -74,9 +69,8 @@ impl Engine {
     /// Start the engine's command-loop thread.
     pub fn start(&mut self) {
         let (sender, receiver) = channel();
-        let data = Arc::clone(&self.data);
         let handle = thread::spawn(move || {
-            Engine::process_commands(receiver, data);
+            Engine::process_commands(receiver);
         });
         self.command_sender = Some(sender);
         self.command_thread = Some(handle);
@@ -213,44 +207,37 @@ impl Engine {
     /// Process commands until `Command::Stop` is received.
     ///
     /// This function runs in the background thread.
-    fn process_commands(receiver: Receiver<Command>, data: Arc<Mutex<Data>>) {
+    fn process_commands(receiver: Receiver<Command>) {
+        let mut d = Data::new();
+        init_hash(&mut d);
         loop {
             let command = receiver.recv().unwrap();
             match command {
                 Command::CanTakeBack(sender) => {
-                    let d = data.lock().unwrap();
                     sender.send(d.hply != 0).unwrap();
                 }
                 Command::ClearPly => {
-                    let mut d = data.lock().unwrap();
                     d.ply = 0;
                 }
                 Command::CloseBook => {
-                    let mut d = data.lock().unwrap();
-                    close_book(&mut *d);
+                    close_book(&mut d);
                 }
                 Command::GetSide(sender) => {
-                    let d = data.lock().unwrap();
                     sender.send((d.side, d.xside)).unwrap();
                 }
                 Command::Gen => {
-                    let mut d = data.lock().unwrap();
-                    gen(&mut *d);
+                    gen(&mut d);
                 }
                 Command::InitBoard => {
-                    let mut d = data.lock().unwrap();
-                    init_board(&mut *d);
+                    init_board(&mut d);
                 }
                 Command::OpenBook => {
-                    let mut d = data.lock().unwrap();
-                    open_book(&mut *d);
+                    open_book(&mut d);
                 }
                 Command::MakeMove(m, sender) => {
-                    let mut d = data.lock().unwrap();
                     sender.send(makemove(&mut d, m)).unwrap();
                 }
                 Command::ParseMove(string, sender) => {
-                    let d = data.lock().unwrap();
                     let m = parse_move(&d, &string);
                     if m == -1 {
                         sender.send(None).unwrap();
@@ -260,15 +247,12 @@ impl Engine {
                     }
                 }
                 Command::PrintBoard => {
-                    let d = data.lock().unwrap();
-                    print_board(&*d);
+                    print_board(&d);
                 }
                 Command::PrintResult => {
-                    let mut d = data.lock().unwrap();
-                    print_result(&mut *d);
+                    print_result(&mut d);
                 }
                 Command::SetMaxTimeAndDepth(max_time, max_depth) => {
-                    let mut d = data.lock().unwrap();
                     d.max_time = max_time;
                     d.max_depth = max_depth;
                 }
@@ -276,12 +260,10 @@ impl Engine {
                     return;
                 }
                 Command::TakeBack => {
-                    let mut d = data.lock().unwrap();
-                    takeback(&mut *d);
+                    takeback(&mut d);
                 }
                 Command::Think(output, sender) => {
-                    let mut d = data.lock().unwrap();
-                    think(&mut *d, output);
+                    think(&mut d, output);
                     sender.send(d.pv[0][0]).unwrap();
                 }
             }

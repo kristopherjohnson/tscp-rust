@@ -41,8 +41,7 @@ fn main() {
 
     let mut computer_side = EMPTY;
     loop {
-        let (side, _) = e.get_side();
-        if side == computer_side {
+        if e.side() == computer_side {
             // computer's turn
 
             // think about the move and make it
@@ -77,8 +76,7 @@ fn main() {
         }
         match s.as_ref() {
             "on" => {
-                let (side, _) = e.get_side();
-                computer_side = side;
+                computer_side = e.side();
                 continue;
             }
             "off" => {

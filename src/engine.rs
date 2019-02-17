@@ -27,7 +27,6 @@ enum Command {
     ClearPly,
     CloseBook,
     Gen,
-    GetSide(Sender<(Int, Int)>),
     InitBoard,
     MakeMove(MoveBytes, Sender<bool>),
     OpenBook,
@@ -35,6 +34,7 @@ enum Command {
     PrintBoard,
     PrintResult,
     SetMaxTimeAndDepth(Int, Int),
+    Side(Sender<Int>),
     Stop,
     TakeBack,
     Think(ThinkOutput, Sender<Move>),
@@ -191,11 +191,10 @@ impl Engine {
     ///
     /// # Return value
     ///
-    /// Returns a tuple `(side, xside)`, where `side` is the current side and
-    /// `xside` is the opposite side.
-    pub fn get_side(&self) -> (Int, Int) {
+    /// Returns the side to move, `LIGHT` or `DARK`.
+    pub fn side(&self) -> Int {
         let (tx, rx) = channel();
-        self.send_command(Command::GetSide(tx));
+        self.send_command(Command::Side(tx));
         return rx.recv().unwrap();
     }
 
@@ -210,6 +209,7 @@ impl Engine {
     fn process_commands(rx: Receiver<Command>) {
         let mut d = Data::new();
         init_hash(&mut d);
+
         loop {
             let command = rx.recv().unwrap();
             match command {
@@ -221,9 +221,6 @@ impl Engine {
                 }
                 Command::CloseBook => {
                     close_book(&mut d);
-                }
-                Command::GetSide(tx) => {
-                    tx.send((d.side, d.xside)).unwrap();
                 }
                 Command::Gen => {
                     gen(&mut d);
@@ -255,6 +252,9 @@ impl Engine {
                 Command::SetMaxTimeAndDepth(max_time, max_depth) => {
                     d.max_time = max_time;
                     d.max_depth = max_depth;
+                }
+                Command::Side(tx) => {
+                    tx.send(d.side).unwrap();
                 }
                 Command::Stop => {
                     return;

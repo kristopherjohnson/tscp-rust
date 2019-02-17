@@ -27,6 +27,7 @@ use crate::board::{gen, in_check, init_board, makemove, set_hash, takeback};
 use crate::book::{close_book, open_book};
 use crate::data::{Data, PIECE_CHAR};
 use crate::defs::{Int, MoveBytes, BISHOP, DARK, EMPTY, KNIGHT, LIGHT, ROOK};
+use crate::engine::Engine;
 use crate::scan::{scan_int, scan_token};
 use crate::search::ThinkOutput::*;
 use crate::search::{reps, think};
@@ -150,32 +151,32 @@ pub fn print_board(d: &Data) {
 /// See the following page for details:
 /// <http://www.research.digital.com/SRC/personal/mann/xboard/engine-intf.html>
 
-pub fn xboard(d: &mut Data) {
+pub fn xboard(e: &mut Engine) {
     let mut post = NoOutput;
 
     unsafe {
         libc::signal(libc::SIGINT, libc::SIG_IGN);
     }
     println!("");
-    init_board(d);
-    gen(d);
+    e.init_board();
+    e.gen();
     let mut computer_side = EMPTY;
     loop {
         io::stdout()
             .flush()
             .expect("unable to flush standard output");
-        if d.side == computer_side {
-            think(d, post);
-            if d.pv[0][0].value() == 0 {
+        if e.side() == computer_side {
+            let m = e.think(post);
+            if m.value() == 0 {
                 computer_side = EMPTY;
                 continue;
             }
-            let m = d.pv[0][0].bytes();
+            let m = m.bytes();
             println!("move {}", move_str(m));
-            makemove(d, m);
-            d.ply = 0;
-            gen(d);
-            print_result(d);
+            e.makemove(m);
+            e.clear_ply();
+            e.gen();
+            e.print_result();
             continue;
         }
         let command = match scan_token() {
@@ -192,8 +193,8 @@ pub fn xboard(d: &mut Data) {
         match command.as_ref() {
             "xboard" => continue,
             "new" => {
-                init_board(d);
-                gen(d);
+                e.init_board();
+                e.gen();
                 computer_side = DARK;
             }
             "quit" => return,
@@ -201,15 +202,13 @@ pub fn xboard(d: &mut Data) {
                 computer_side = EMPTY;
             }
             "white" => {
-                d.side = LIGHT;
-                d.xside = DARK;
-                gen(d);
+                e.set_side(LIGHT);
+                e.gen();
                 computer_side = DARK;
             }
             "black" => {
-                d.side = DARK;
-                d.xside = LIGHT;
-                gen(d);
+                e.set_side(DARK);
+                e.gen();
                 computer_side = LIGHT;
             }
             "st" => {
@@ -220,8 +219,7 @@ pub fn xboard(d: &mut Data) {
                         return;
                     }
                 };
-                d.max_time = n * 1000;
-                d.max_depth = 32;
+                e.set_max_time_and_depth(n * 1000, 32);
             }
             "sd" => {
                 let n = match scan_int() {
@@ -231,8 +229,7 @@ pub fn xboard(d: &mut Data) {
                         return;
                     }
                 };
-                d.max_depth = n;
-                d.max_time = 1 << 25;
+                e.set_max_time_and_depth(n, 1 << 25);
             }
             "time" => {
                 let n = match scan_int() {
@@ -242,36 +239,35 @@ pub fn xboard(d: &mut Data) {
                         return;
                     }
                 };
-                d.max_time = (n * 10) / 30;
-                d.max_depth = 32;
+                e.set_max_time_and_depth((n * 10) / 30, 32);
             }
             "otim" => continue,
             "go" => {
-                computer_side = d.side;
+                computer_side = e.side();
             }
             "hint" => {
-                think(d, NoOutput);
-                if d.pv[0][0].value() == 0 {
+                let m = e.think(NoOutput);
+                if m.value() == 0 {
                     continue;
                 }
-                println!("Hint: {}", move_str(d.pv[0][0].bytes()));
+                println!("Hint: {}", move_str(m.bytes()));
             }
             "undo" => {
-                if d.hply == 0 {
+                if !e.can_takeback() {
                     continue;
                 }
-                takeback(d);
-                d.ply = 0;
-                gen(d);
+                e.takeback();
+                e.clear_ply();
+                e.gen();
             }
             "remove" => {
-                if d.hply < 2 {
+                if !e.can_takeback_n(2) {
                     continue;
                 }
-                takeback(d);
-                takeback(d);
-                d.ply = 0;
-                gen(d);
+                e.takeback();
+                e.takeback();
+                e.clear_ply();
+                e.gen();
             }
             "post" => {
                 post = XboardOutput;
@@ -279,21 +275,20 @@ pub fn xboard(d: &mut Data) {
             "nopost" => {
                 post = NoOutput;
             }
-            _ => {
-                let m = parse_move(d, &command);
-                if m == -1 {
+            _ => match e.parse_move(command.clone()) {
+                None => {
                     println!("Error (unknown command): {}", command);
-                } else {
-                    let m = d.gen_dat[m as usize].m.bytes();
-                    if !makemove(d, m) {
+                }
+                Some(m) => {
+                    if !e.makemove(m) {
                         println!("Error (unknown command): {}", command);
                     } else {
-                        d.ply = 0;
-                        gen(d);
-                        print_result(d);
+                        e.clear_ply();
+                        e.gen();
+                        e.print_result();
                     }
                 }
-            }
+            },
         }
     }
 }

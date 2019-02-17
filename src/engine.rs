@@ -16,14 +16,14 @@ use std::thread::JoinHandle;
 use crate::board::{gen, init_board, init_hash, makemove, takeback};
 use crate::book::{close_book, open_book};
 use crate::data::Data;
-use crate::defs::{Int, Move, MoveBytes};
+use crate::defs::{Int, Move, MoveBytes, DARK, LIGHT};
 use crate::search::{think, ThinkOutput};
 use crate::{parse_move, print_board, print_result};
 
 /// A command that can be sent to an Engine's background thread via its channel.
 #[derive(Debug, Clone)]
 enum Command {
-    CanTakeBack(Sender<bool>),
+    CanTakeBack(u32, Sender<bool>),
     ClearPly,
     CloseBook,
     Gen,
@@ -34,6 +34,7 @@ enum Command {
     PrintBoard,
     PrintResult,
     SetMaxTimeAndDepth(Int, Int),
+    SetSide(Int),
     Side(Sender<Int>),
     Stop,
     TakeBack,
@@ -165,8 +166,18 @@ impl Engine {
     ///
     /// Return `true` if it is valid to call `takeback()`.
     pub fn can_takeback(&self) -> bool {
+        self.can_takeback_n(1)
+    }
+
+    /// Determine whether `takeback()` can be called N times.
+    ///
+    /// # Return value
+    ///
+    /// Return `true` if it is valid to call `takeback()` the specified number
+    /// of times.
+    pub fn can_takeback_n(&self, n: u32) -> bool {
         let (tx, rx) = channel();
-        self.send_command(Command::CanTakeBack(tx));
+        self.send_command(Command::CanTakeBack(n, tx));
         return rx.recv().unwrap();
     }
 
@@ -179,8 +190,8 @@ impl Engine {
     ///
     /// # Return value
     ///
-    /// Returns None if the string is not a valid move.
-    /// Otherwise, returns the specified Move.
+    /// Returns `None` if the string is not a valid move command.  Otherwise,
+    /// returns the specified Move.
     pub fn parse_move(&self, s: String) -> Option<MoveBytes> {
         let (tx, rx) = channel();
         self.send_command(Command::ParseMove(s, tx));
@@ -198,6 +209,11 @@ impl Engine {
         return rx.recv().unwrap();
     }
 
+    /// Set the side to move.
+    pub fn set_side(&mut self, side: Int) {
+        self.send_command(Command::SetSide(side));
+    }
+
     /// Send a command to the background thread.
     fn send_command(&self, command: Command) {
         self.command_tx.as_ref().unwrap().send(command).unwrap();
@@ -213,8 +229,8 @@ impl Engine {
         loop {
             let command = rx.recv().unwrap();
             match command {
-                Command::CanTakeBack(tx) => {
-                    tx.send(d.hply != 0).unwrap();
+                Command::CanTakeBack(n, tx) => {
+                    tx.send(d.hply >= (n as usize)).unwrap();
                 }
                 Command::ClearPly => {
                     d.ply = 0;
@@ -253,6 +269,19 @@ impl Engine {
                     d.max_time = max_time;
                     d.max_depth = max_depth;
                 }
+                Command::SetSide(side) => match side {
+                    LIGHT => {
+                        d.side = LIGHT;
+                        d.xside = DARK;
+                    }
+                    DARK => {
+                        d.side = DARK;
+                        d.xside = LIGHT;
+                    }
+                    _ => {
+                        panic!("set_side: invalid argument {}", side);
+                    }
+                },
                 Command::Side(tx) => {
                     tx.send(d.side).unwrap();
                 }

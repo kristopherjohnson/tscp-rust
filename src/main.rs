@@ -127,8 +127,9 @@ fn main() {
             }
             "bench" => {
                 computer_side = EMPTY;
-                // #rust TODO: Support calling bench() with the engine.  For
-                // now, just initialize a fresh Data instance and use that.
+                // #rust TODO: Support calling bench() with an Engine as
+                // argument.  For now, just initialize a fresh Data instance and
+                // use that.
                 let mut d = Data::new();
                 init_hash(&mut d);
                 init_board(&mut d);
@@ -141,13 +142,7 @@ fn main() {
                 break;
             }
             "xboard" => {
-                // #rust TODO: Support calling bench() with the engine.  For
-                // now, just initialize a fresh Data instance and use that.
-                let mut d = Data::new();
-                init_hash(&mut d);
-                init_board(&mut d);
-                gen(&mut d);
-                xboard(&mut d);
+                xboard(&mut e);
                 break;
             }
             "help" => {

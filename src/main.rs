@@ -102,7 +102,7 @@ fn main() {
                         return;
                     }
                 };
-                e.set_max_time_and_depth(n, 1 << 25);
+                e.set_max_time_and_depth(1 << 25, n);
                 continue;
             }
             "undo" => {

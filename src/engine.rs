@@ -88,8 +88,7 @@ impl Engine {
     /// // ...
     /// e.stop();
     pub fn stop(&mut self) {
-        let command_thread = self.command_thread.take();
-        if let Some(thread) = command_thread {
+        if let Some(thread) = self.command_thread.take() {
             self.send_command(Command::Stop);
             thread.join().unwrap();
         }

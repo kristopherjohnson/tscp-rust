@@ -36,7 +36,7 @@ fn get_ms() -> u128 {
     let duration = SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .expect("system time error");
-    duration.as_secs() as u128 * 1000 + duration.subsec_millis() as u128
+    duration.as_millis()
 }
 
 /// parse the move s (in coordinate notation) and return the move's index in

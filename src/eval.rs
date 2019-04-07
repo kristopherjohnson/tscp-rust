@@ -120,10 +120,8 @@ pub fn eval(d: &mut Data) -> Int {
                 if d.pawn_rank[LIGHT as usize][f] < row!(i as Int) {
                     d.pawn_rank[LIGHT as usize][f] = row!(i as Int);
                 }
-            } else {
-                if d.pawn_rank[DARK as usize][f] > row!(i as Int) {
-                    d.pawn_rank[DARK as usize][f] = row!(i as Int);
-                }
+            } else if d.pawn_rank[DARK as usize][f] > row!(i as Int) {
+                d.pawn_rank[DARK as usize][f] = row!(i as Int);
             }
         } else {
             d.piece_mat[d.color[i] as usize] +=
@@ -210,9 +208,9 @@ pub fn eval(d: &mut Data) -> Int {
     // the score[] array is set, now return the score relative to the side to
     // move
     if d.side == LIGHT {
-        return score[LIGHT as usize] - score[DARK as usize];
+        score[LIGHT as usize] - score[DARK as usize]
     } else {
-        return score[DARK as usize] - score[LIGHT as usize];
+        score[DARK as usize] - score[LIGHT as usize]
     }
 }
 

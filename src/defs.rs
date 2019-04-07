@@ -89,7 +89,7 @@ pub union Move {
 impl Move {
     /// safely extract MoveBytes variant from a Move
     #[inline]
-    pub fn bytes(self: &Move) -> MoveBytes {
+    pub fn bytes(self: Move) -> MoveBytes {
         unsafe { self.b }
     }
 
@@ -101,7 +101,7 @@ impl Move {
 
     /// safely extract 32-bit value from a Move
     #[inline]
-    pub fn value(self: &Move) -> Int {
+    pub fn value(self: Move) -> Int {
         unsafe { self.u }
     }
 

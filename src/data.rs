@@ -152,6 +152,12 @@ impl Data {
     }
 }
 
+impl Default for Data {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 /// Now we have the mailbox array, so called because it looks like a mailbox, at
 /// least according to Bob Hyatt. This is useful when we need to figure out what
 /// pieces can go where. Let's say we have a rook on square a4 (32) and we want

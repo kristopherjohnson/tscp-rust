@@ -70,7 +70,7 @@ fn main() {
                 return;
             }
         };
-        if s.len() == 0 {
+        if s.is_empty() {
             // EOF
             return;
         }

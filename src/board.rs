@@ -166,6 +166,7 @@ fn attack(d: &Data, sq: usize, s: Int) -> bool {
 /// When it finds a piece/square combination, it calls gen_push to put the move
 /// on the "move stack."
 
+#[allow(clippy::cyclomatic_complexity)]
 pub fn gen(d: &mut Data) {
     // so far, we have no moves for the current ply
     d.first_move[d.ply + 1] = d.first_move[d.ply];
@@ -383,11 +384,9 @@ fn gen_push(d: &mut Data, from: usize, to: usize, bits: u8) {
                 gen_promote(d, from, to, bits);
                 return;
             }
-        } else {
-            if to >= A1 {
-                gen_promote(d, from, to, bits);
-                return;
-            }
+        } else if to >= A1 {
+            gen_promote(d, from, to, bits);
+            return;
         }
     }
     let g = &mut d.gen_dat[d.first_move[d.ply + 1] as usize];
@@ -399,7 +398,7 @@ fn gen_push(d: &mut Data, from: usize, to: usize, bits: u8) {
         g.m.b.bits = bits;
     }
     if d.color[to] != EMPTY {
-        g.score = 1000000 + d.piece[to] * 10 - d.piece[from];
+        g.score = 1_000_000 + d.piece[to] * 10 - d.piece[from];
     } else {
         g.score = d.history[from][to];
     }
@@ -418,7 +417,7 @@ fn gen_promote(d: &mut Data, from: usize, to: usize, bits: u8) {
             g.m.b.promote = i as u8;
             g.m.b.bits = bits | 32;
         }
-        g.score = 1000000 + (i * 10);
+        g.score = 1_000_000 + (i * 10);
     }
 }
 
@@ -507,9 +506,9 @@ pub fn makemove(d: &mut Data, m: MoveBytes) -> bool {
     d.castle &= CASTLE_MASK[m.from as usize] & CASTLE_MASK[m.to as usize];
     if (m.bits & 8) != 0 {
         if d.side == LIGHT {
-            d.ep = m.to as Int + 8;
+            d.ep = Int::from(m.to) + 8;
         } else {
-            d.ep = m.to as Int - 8;
+            d.ep = Int::from(m.to) - 8;
         }
     } else {
         d.ep = -1;
@@ -523,7 +522,7 @@ pub fn makemove(d: &mut Data, m: MoveBytes) -> bool {
     // move the piece
     d.color[m.to as usize] = d.side;
     if (m.bits & 32) != 0 {
-        d.piece[m.to as usize] = m.promote as Int;
+        d.piece[m.to as usize] = Int::from(m.promote);
     } else {
         d.piece[m.to as usize] = d.piece[m.from as usize];
     }

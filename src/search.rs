@@ -84,7 +84,7 @@ pub fn think(d: &mut Data, output: ThinkOutput) {
                     for j in 0..d.pv_length[0] {
                         print!(" {}", move_str(d.pv[0][j].bytes()));
                     }
-                    print!("\n");
+                    println!();
                     stdout().flush().expect("flush");
                 }
                 if x > 9000 || x < -9000 {
@@ -97,6 +97,7 @@ pub fn think(d: &mut Data, output: ThinkOutput) {
 
 /// search() does just that, in negamax fashion
 
+#[allow(clippy::manual_memcpy)]
 fn search(d: &mut Data, alpha: Int, beta: Int, depth: Int) -> SearchResult {
     // we're as deep as we want to be; call quiesce() to get a reasonable score
     // and return it
@@ -106,10 +107,8 @@ fn search(d: &mut Data, alpha: Int, beta: Int, depth: Int) -> SearchResult {
     d.nodes += 1;
 
     // do some housekeeping every 1024 nodes
-    if (d.nodes & 1023) == 0 {
-        if !checkup(d) {
-            return SearchResult::Timeout;
-        }
+    if (d.nodes & 1023) == 0 && !checkup(d) {
+        return SearchResult::Timeout;
     }
 
     d.pv_length[d.ply] = d.ply;
@@ -170,6 +169,9 @@ fn search(d: &mut Data, alpha: Int, beta: Int, depth: Int) -> SearchResult {
 
                     // update the PV
                     d.pv[d.ply][d.ply] = d.gen_dat[i].m;
+                    // #rust TODO: use split_at_mut/clone_from_slice instead of
+                    // manual element-by-element copy here.  (And remove the
+                    // #[allow(clippy::manual_memcpy)] annotation.)
                     for j in (d.ply + 1)..d.pv_length[d.ply + 1] {
                         d.pv[d.ply][j] = d.pv[d.ply + 1][j];
                     }
@@ -201,14 +203,13 @@ fn search(d: &mut Data, alpha: Int, beta: Int, depth: Int) -> SearchResult {
 /// idea is to find a position where there isn't a lot going on so the static
 /// evaluation function will work.
 
+#[allow(clippy::manual_memcpy)]
 fn quiesce(d: &mut Data, alpha: Int, beta: Int) -> SearchResult {
     d.nodes += 1;
 
     // do some housekeeping every 1024 nodes
-    if (d.nodes & 1023) == 0 {
-        if !checkup(d) {
-            return SearchResult::Timeout;
-        }
+    if (d.nodes & 1023) == 0 && !checkup(d) {
+        return SearchResult::Timeout;
     }
 
     d.pv_length[d.ply] = d.ply;
@@ -258,6 +259,9 @@ fn quiesce(d: &mut Data, alpha: Int, beta: Int) -> SearchResult {
 
                     // update the PV
                     d.pv[d.ply][d.ply] = d.gen_dat[i].m;
+                    // #rust TODO: use split_at_mut/clone_from_slice instead of
+                    // manual element-by-element copy here.  (And remove the
+                    // #[allow(clippy::manual_memcpy)] annotation.)
                     for j in (d.ply + 1)..d.pv_length[d.ply + 1] {
                         d.pv[d.ply][j] = d.pv[d.ply + 1][j];
                     }
@@ -293,7 +297,7 @@ fn sort_pv(d: &mut Data) {
     for i in d.first_move[d.ply]..d.first_move[d.ply + 1] {
         if d.gen_dat[i].m.value() == d.pv[0][d.ply].value() {
             d.follow_pv = true;
-            d.gen_dat[i].score += 10000000;
+            d.gen_dat[i].score += 10_000_000;
             return;
         }
     }
@@ -313,9 +317,7 @@ fn sort(d: &mut Data, from: usize) {
             bi = i;
         }
     }
-    let g = d.gen_dat[from];
-    d.gen_dat[from] = d.gen_dat[bi];
-    d.gen_dat[bi] = g;
+    d.gen_dat.swap(from, bi);
 }
 
 // checkup() is called once in a while during the search. If it returns false,

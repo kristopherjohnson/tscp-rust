@@ -98,13 +98,14 @@ pub fn parse_move(d: &Data, s: &str) -> Int {
 pub fn move_str(m: MoveBytes) -> String {
     unsafe {
         let from_col =
-            char::from_u32_unchecked(col!(m.from) as u32 + 'a' as u32);
+            char::from_u32_unchecked(u32::from(col!(m.from)) + 'a' as u32);
         let from_row = 8 - row!(m.from);
-        let to_col = char::from_u32_unchecked(col!(m.to) as u32 + 'a' as u32);
+        let to_col =
+            char::from_u32_unchecked(u32::from(col!(m.to)) + 'a' as u32);
         let to_row = 8 - row!(m.to);
 
         if (m.bits & 32) != 0 {
-            let c = match m.promote as Int {
+            let c = match Int::from(m.promote) {
                 KNIGHT => 'n',
                 BISHOP => 'b',
                 ROOK => 'r',
@@ -155,7 +156,7 @@ pub fn xboard(d: &mut Data) {
     unsafe {
         libc::signal(libc::SIGINT, libc::SIG_IGN);
     }
-    println!("");
+    println!();
     init_board(d);
     gen(d);
     let mut computer_side = EMPTY;
@@ -184,7 +185,7 @@ pub fn xboard(d: &mut Data) {
                 return;
             }
         };
-        if command.len() == 0 {
+        if command.is_empty() {
             // #rust: EOF
             return;
         }
@@ -355,16 +356,12 @@ const BENCH_PIECE: [Int; 64] = [
 /// five ply three times. It calculates nodes per second from the best time.
 
 pub fn bench(d: &mut Data) {
-    let mut t: [Int; 3] = [0; 3];
-
     // setting the position to a non-initial position confuses the opening book
     // code.
     close_book(d);
 
-    for i in 0..64 {
-        d.color[i] = BENCH_COLOR[i];
-        d.piece[i] = BENCH_PIECE[i];
-    }
+    d.color[..64].clone_from_slice(&BENCH_COLOR[..64]);
+    d.piece[..64].clone_from_slice(&BENCH_PIECE[..64]);
     d.side = LIGHT;
     d.xside = DARK;
     d.castle = 0;
@@ -376,10 +373,12 @@ pub fn bench(d: &mut Data) {
     print_board(d);
     d.max_time = 1 << 25;
     d.max_depth = 5;
-    for i in 0..3 {
+
+    let mut t: [Int; 3] = [0; 3];
+    for x in &mut t {
         think(d, NormalOutput);
-        t[i] = (get_ms() - d.start_time) as Int;
-        println!("Time: {} ms", t[i]);
+        *x = (get_ms() - d.start_time) as Int;
+        println!("Time: {} ms", *x);
     }
     if t[1] < t[0] {
         t[0] = t[1];
@@ -387,21 +386,22 @@ pub fn bench(d: &mut Data) {
     if t[2] < t[0] {
         t[0] = t[2];
     }
-    println!("");
+
+    println!();
     println!("Nodes: {}", d.nodes);
     println!("Best time: {} ms", t[0]);
     if t[0] == 0 {
         println!("(invalid)");
         return;
     }
-    let nps = (d.nodes as f64) / (t[0] as f64);
+    let nps = f64::from(d.nodes) / f64::from(t[0]);
     let nps = nps * 1000.0;
 
     // Score: 1.00 = my Athlon XP 2000+
     println!(
         "Nodes per second: {} (Score: {:.3})",
         nps as i32,
-        nps / 243169.0
+        nps / 243_169.0
     );
 
     init_board(d);

@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/kristopherjohnson/tscp-rust.svg?branch=master)](https://travis-ci.org/kristopherjohnson/tscp-rust)
+
 Tom Kerrigan's Simple Chess Program (TSCP)
 
 Copyright 2019 Tom Kerrigan

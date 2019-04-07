@@ -44,6 +44,7 @@ enum Command {
 /// An `Engine` is able to `think()` and perform other processing on a
 /// background thread, allowing the main thread to handle I/O operations and
 /// higher-level game logic.
+#[derive(Default)]
 pub struct Engine {
     command_tx: Option<Sender<Command>>,
     command_thread: Option<JoinHandle<()>>,
@@ -61,10 +62,7 @@ impl Engine {
     /// let engine = Engine::new();
     /// ```
     pub fn new() -> Engine {
-        return Engine {
-            command_tx: None,
-            command_thread: None,
-        };
+        Engine::default()
     }
 
     /// Start the engine's command-loop thread.
@@ -128,7 +126,7 @@ impl Engine {
     pub fn think(&mut self, output: ThinkOutput) -> Move {
         let (tx, rx) = channel();
         self.send_command(Command::Think(output, tx));
-        return rx.recv().unwrap();
+        rx.recv().unwrap()
     }
 
     /// Call `board::makemove()` on the engine's data.
@@ -141,7 +139,7 @@ impl Engine {
     pub fn makemove(&mut self, m: MoveBytes) -> bool {
         let (tx, rx) = channel();
         self.send_command(Command::MakeMove(m, tx));
-        return rx.recv().unwrap();
+        rx.recv().unwrap()
     }
 
     /// Reset `data.ply` to zero.
@@ -177,7 +175,7 @@ impl Engine {
     pub fn can_takeback_n(&self, n: u32) -> bool {
         let (tx, rx) = channel();
         self.send_command(Command::CanTakeBack(n, tx));
-        return rx.recv().unwrap();
+        rx.recv().unwrap()
     }
 
     /// Call `board::takeback()` on the engine's data.
@@ -194,7 +192,7 @@ impl Engine {
     pub fn parse_move(&self, s: String) -> Option<MoveBytes> {
         let (tx, rx) = channel();
         self.send_command(Command::ParseMove(s, tx));
-        return rx.recv().unwrap();
+        rx.recv().unwrap()
     }
 
     /// Determine which side is making a move.
@@ -205,7 +203,7 @@ impl Engine {
     pub fn side(&self) -> Int {
         let (tx, rx) = channel();
         self.send_command(Command::Side(tx));
-        return rx.recv().unwrap();
+        rx.recv().unwrap()
     }
 
     /// Set the side to move.

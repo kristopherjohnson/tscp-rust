@@ -158,15 +158,9 @@ pub fn xboard(e: &mut Engine) {
     unsafe {
         libc::signal(libc::SIGINT, libc::SIG_IGN);
     }
-<<<<<<< HEAD
-    println!("");
+    println!();
     e.init_board();
     e.gen();
-=======
-    println!();
-    init_board(d);
-    gen(d);
->>>>>>> master
     let mut computer_side = EMPTY;
     loop {
         io::stdout()

@@ -137,3 +137,16 @@ pub struct Hist {
     pub fifty: Int,
     pub hash: Int,
 }
+
+impl Default for Hist {
+    fn default() -> Self {
+        Hist {
+            m: Move::default(),
+            capture: 0,
+            castle: 0,
+            ep: 0,
+            fifty: 0,
+            hash: 0,
+        }
+    }
+}

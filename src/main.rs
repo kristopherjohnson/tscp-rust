@@ -17,21 +17,40 @@ use tscp::search::think;
 use tscp::search::ThinkOutput::*;
 use tscp::{bench, move_str, parse_move, print_board, print_result, xboard};
 
-fn main() {
-    const BANNER: [&str; 9] = [
-        "",
-        "Tom Kerrigan's Simple Chess Program (TSCP)",
-        "version 1.81c, 2/3/19",
-        "Copyright 2019 Tom Kerrigan",
-        "",
-        "(Rust port by Kristopher Johnson)",
-        "",
-        "\"help\" displays a list of commands.",
-        "",
-    ];
-    for line in BANNER.iter() {
+const BANNER: [&str; 9] = [
+    "",
+    "Tom Kerrigan's Simple Chess Program (TSCP)",
+    "version 1.81c, 2/3/19",
+    "Copyright 2019 Tom Kerrigan",
+    "",
+    "(Rust port by Kristopher Johnson)",
+    "",
+    "\"help\" displays a list of commands.",
+    "",
+];
+
+const HELP: [&str; 11] = [
+    "on - computer plays for the side to move",
+    "off - computer stops playing",
+    "st n - search for n seconds per move",
+    "sd n - search n ply per move",
+    "undo - takes back a move",
+    "new - starts a new game",
+    "d - display the board",
+    "bench - run the built-in benchmark",
+    "bye - exit the program",
+    "xboard - switch to XBoard mode",
+    "Enter moves in coordinate notation, e.g., e2e4, e7e8Q",
+];
+
+fn print_lines(lines: &[&str]) {
+    for line in lines.iter() {
         println!("{}", line);
     }
+}
+
+fn main() {
+    print_lines(&BANNER);
 
     let mut d = Data::new();
     init_hash(&mut d);
@@ -142,22 +161,8 @@ fn main() {
                 break;
             }
             "help" => {
-                const HELP: [&str; 11] = [
-                    "on - computer plays for the side to move",
-                    "off - computer stops playing",
-                    "st n - search for n seconds per move",
-                    "sd n - search n ply per move",
-                    "undo - takes back a move",
-                    "new - starts a new game",
-                    "d - display the board",
-                    "bench - run the built-in benchmark",
-                    "bye - exit the program",
-                    "xboard - switch to XBoard mode",
-                    "Enter moves in coordinate notation, e.g., e2e4, e7e8Q",
-                ];
-                for line in HELP.iter() {
-                    println!("{}", line);
-                }
+                print_lines(&HELP);
+                continue;
             }
             _ => {
                 // maybe the user entered a move?

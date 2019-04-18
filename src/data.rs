@@ -118,10 +118,7 @@ impl Data {
             hash: 0,
             ply: 0,
             hply: 0,
-            gen_dat: [Gen {
-                m: Move::default(),
-                score: 0,
-            }; GEN_STACK],
+            gen_dat: [Gen::default(); GEN_STACK],
             first_move: [0; MAX_PLY],
             history: [[0; 64]; 64],
             hist_dat: [Hist::default(); HIST_STACK],

@@ -112,6 +112,12 @@ impl Move {
     }
 }
 
+impl Default for Move {
+    fn default() -> Self {
+        Move { u: 0 }
+    }
+}
+
 /// an element of the move stack. it's just a move with a score, so it can be
 /// sorted by the search functions.
 #[derive(Copy, Clone)]

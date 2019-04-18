@@ -51,7 +51,7 @@ pub fn think(d: &mut Data, output: ThinkOutput) {
 
     for i in 0..MAX_PLY {
         for j in 0..MAX_PLY {
-            d.pv[i][j] = Move { u: 0 };
+            d.pv[i][j] = Move::default();
         }
     }
     for i in 0..64 {

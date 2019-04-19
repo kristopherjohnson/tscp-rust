@@ -126,10 +126,9 @@ pub fn scan_int() -> io::Result<Int> {
 /// ```
 
 pub fn scan_int_from(reader: &mut Read) -> io::Result<Int> {
-    match scan_token_from(reader)?.parse() {
-        Ok(n) => Ok(n),
-        Err(err) => Err(io::Error::new(io::ErrorKind::InvalidData, err)),
-    }
+    scan_token_from(reader)?
+        .parse()
+        .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))
 }
 
 enum ReadByteResult {
@@ -141,7 +140,7 @@ enum ReadByteResult {
 /// attempts to read a single byte from stdin.
 
 fn read_byte(reader: &mut Read) -> ReadByteResult {
-    let mut buffer: [u8; 1] = [0; 1];
+    let mut buffer = [0_u8; 1];
     match reader.read(&mut buffer) {
         Ok(1) => ReadByteResult::Ok(buffer[0]),
         Ok(0) => ReadByteResult::Eof,

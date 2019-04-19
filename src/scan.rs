@@ -126,12 +126,10 @@ pub fn scan_int() -> io::Result<Int> {
 /// ```
 
 pub fn scan_int_from(reader: &mut Read) -> io::Result<Int> {
-    let token = scan_token_from(reader)?;
-    let value: Int = match token.parse() {
-        Ok(n) => n,
-        Err(err) => return Err(io::Error::new(io::ErrorKind::InvalidData, err)),
-    };
-    Ok(value)
+    match scan_token_from(reader)?.parse() {
+        Ok(n) => Ok(n),
+        Err(err) => Err(io::Error::new(io::ErrorKind::InvalidData, err)),
+    }
 }
 
 enum ReadByteResult {

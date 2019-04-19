@@ -68,7 +68,7 @@ macro_rules! col {
 /// It's union'ed with an integer so two moves can easily
 /// be compared with each other.
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, Default)]
 pub struct MoveBytes {
     pub from: u8,
     pub to: u8,
@@ -112,9 +112,15 @@ impl Move {
     }
 }
 
+impl Default for Move {
+    fn default() -> Self {
+        Move { u: 0 }
+    }
+}
+
 /// an element of the move stack. it's just a move with a score, so it can be
 /// sorted by the search functions.
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Default)]
 pub struct Gen {
     pub m: Move,
     pub score: Int,
@@ -122,7 +128,7 @@ pub struct Gen {
 
 /// an element of the history stack, with the information necessary to take a
 /// move back.
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Default)]
 pub struct Hist {
     pub m: Move,
     pub capture: Int,

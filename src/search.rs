@@ -49,8 +49,16 @@ pub fn think(d: &mut Data, output: ThinkOutput) {
     d.ply = 0;
     d.nodes = 0;
 
-    d.pv = [[Move { u: 0 }; MAX_PLY]; MAX_PLY];
-    d.history = [[0; 64]; 64];
+    for i in 0..MAX_PLY {
+        for j in 0..MAX_PLY {
+            d.pv[i][j] = Move::default();
+        }
+    }
+    for i in 0..64 {
+        for j in 0..64 {
+            d.history[i][j] = 0;
+        }
+    }
     if output == ThinkOutput::NormalOutput {
         println!("ply      nodes  score  pv");
     }

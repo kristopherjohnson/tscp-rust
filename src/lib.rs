@@ -35,10 +35,10 @@ use crate::search::{reps, think};
 /// get_ms() returns the milliseconds elapsed since midnight, January 1, 1970
 
 fn get_ms() -> u128 {
-    let duration = SystemTime::now()
+    SystemTime::now()
         .duration_since(UNIX_EPOCH)
-        .expect("system time error");
-    duration.as_millis()
+        .expect("system time error")
+        .as_millis()
 }
 
 /// parse the move s (in coordinate notation) and return the move's index in

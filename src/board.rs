@@ -166,7 +166,7 @@ fn attack(d: &Data, sq: usize, s: Int) -> bool {
 /// When it finds a piece/square combination, it calls gen_push to put the move
 /// on the "move stack."
 
-#[allow(clippy::cyclomatic_complexity)]
+#[allow(clippy::cognitive_complexity)]
 pub fn gen(d: &mut Data) {
     // so far, we have no moves for the current ply
     d.first_move[d.ply + 1] = d.first_move[d.ply];

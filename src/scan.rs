@@ -170,8 +170,5 @@ fn read_byte(reader: &mut dyn Read) -> ReadByteResult {
 /// ```
 
 pub fn is_whitespace(ascii: u8) -> bool {
-    match ascii {
-        0x9 | 0xa | 0xb | 0xd | 0x20 => true,
-        _ => false,
-    }
+    matches!(ascii, 0x9 | 0xa | 0xb | 0xd | 0x20)
 }

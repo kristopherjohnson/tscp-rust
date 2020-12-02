@@ -91,7 +91,9 @@ pub fn scan_token_from(reader: &mut dyn Read) -> io::Result<String> {
     // convert bytes to a String
     let s = match String::from_utf8(bytes) {
         Ok(s) => s,
-        Err(err) => return Err(io::Error::new(io::ErrorKind::InvalidData, err)),
+        Err(err) => {
+            return Err(io::Error::new(io::ErrorKind::InvalidData, err))
+        }
     };
     Ok(s)
 }

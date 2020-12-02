@@ -49,7 +49,7 @@ pub fn scan_token() -> io::Result<String> {
 /// assert_eq!(scan_token_from(&mut reader).unwrap(), "");
 /// ```
 
-pub fn scan_token_from(reader: &mut Read) -> io::Result<String> {
+pub fn scan_token_from(reader: &mut dyn Read) -> io::Result<String> {
     let mut bytes: Vec<u8> = Vec::new();
 
     // skip leading whitespace
@@ -125,7 +125,7 @@ pub fn scan_int() -> io::Result<Int> {
 /// assert_eq!(scan_int_from(&mut reader).unwrap(), 789);
 /// ```
 
-pub fn scan_int_from(reader: &mut Read) -> io::Result<Int> {
+pub fn scan_int_from(reader: &mut dyn Read) -> io::Result<Int> {
     scan_token_from(reader)?
         .parse()
         .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))
@@ -139,7 +139,7 @@ enum ReadByteResult {
 
 /// attempts to read a single byte from stdin.
 
-fn read_byte(reader: &mut Read) -> ReadByteResult {
+fn read_byte(reader: &mut dyn Read) -> ReadByteResult {
     let mut buffer = [0_u8; 1];
     match reader.read(&mut buffer) {
         Ok(1) => ReadByteResult::Ok(buffer[0]),

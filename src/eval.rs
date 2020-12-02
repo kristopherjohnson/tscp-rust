@@ -398,7 +398,7 @@ fn eval_dkp(d: &Data, f: usize) -> Int {
     let rank_dark = d.pawn_rank[DARK as usize][f];
 
     if rank_dark == 1 {
-        ;
+        // do nothing
     } else if rank_dark == 2 {
         r -= 10;
     } else if rank_dark != 7 {

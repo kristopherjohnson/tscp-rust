@@ -391,12 +391,10 @@ fn gen_push(d: &mut Data, from: usize, to: usize, bits: u8) {
     }
     let g = &mut d.gen_dat[d.first_move[d.ply + 1] as usize];
     d.first_move[d.ply + 1] += 1;
-    unsafe {
-        g.m.b.from = from as u8;
-        g.m.b.to = to as u8;
-        g.m.b.promote = 0;
-        g.m.b.bits = bits;
-    }
+    g.m.b.from = from as u8;
+    g.m.b.to = to as u8;
+    g.m.b.promote = 0;
+    g.m.b.bits = bits;
     if d.color[to] != EMPTY {
         g.score = 1_000_000 + d.piece[to] * 10 - d.piece[from];
     } else {
@@ -411,12 +409,10 @@ fn gen_promote(d: &mut Data, from: usize, to: usize, bits: u8) {
     for i in KNIGHT..=QUEEN {
         let g = &mut d.gen_dat[d.first_move[d.ply + 1] as usize];
         d.first_move[d.ply + 1] += 1;
-        unsafe {
-            g.m.b.from = from as u8;
-            g.m.b.to = to as u8;
-            g.m.b.promote = i as u8;
-            g.m.b.bits = bits | 32;
-        }
+        g.m.b.from = from as u8;
+        g.m.b.to = to as u8;
+        g.m.b.promote = i as u8;
+        g.m.b.bits = bits | 32;
         g.score = 1_000_000 + (i * 10);
     }
 }

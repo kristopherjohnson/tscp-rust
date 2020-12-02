@@ -98,14 +98,13 @@ pub fn parse_move(d: &Data, s: &str) -> Int {
 pub fn move_str(m: MoveBytes) -> String {
     unsafe {
         let from_col =
-            char::from_u32_unchecked(u32::from(col!(m.from)) + 'a' as u32);
+            char::from_u32_unchecked(col!(m.from) as u32 + 'a' as u32);
         let from_row = 8 - row!(m.from);
-        let to_col =
-            char::from_u32_unchecked(u32::from(col!(m.to)) + 'a' as u32);
+        let to_col = char::from_u32_unchecked(col!(m.to) as u32 + 'a' as u32);
         let to_row = 8 - row!(m.to);
 
         if (m.bits & 32) != 0 {
-            let c = match Int::from(m.promote) {
+            let c = match m.promote as Int {
                 KNIGHT => 'n',
                 BISHOP => 'b',
                 ROOK => 'r',
@@ -394,8 +393,8 @@ pub fn bench(d: &mut Data) {
         println!("(invalid)");
         return;
     }
-    let nps = f64::from(d.nodes) / f64::from(t[0]);
-    let nps = nps * 1000.0;
+    let nps = d.nodes / t[0];
+    let nps = nps as f64 * 1000.0;
 
     // Score: 1.00 = my Athlon XP 2000+
     println!(

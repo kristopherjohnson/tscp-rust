@@ -5,7 +5,7 @@
 //
 // Rust port by Kristopher Johnson
 
-pub type Int = i32;
+pub type Int = i64;
 
 pub const GEN_STACK: usize = 1120;
 pub const MAX_PLY: usize = 32;
@@ -41,12 +41,14 @@ pub const F8: usize = 5;
 pub const G8: usize = 6;
 pub const H8: usize = 7;
 
+/// Get the row number for a square
 macro_rules! row {
     ( $x:expr ) => {
         $x >> 3
     };
 }
 
+/// Get the column index for a square
 macro_rules! col {
     ( $x:expr ) => {
         $x & 7
@@ -88,25 +90,25 @@ pub union Move {
 
 impl Move {
     /// safely extract MoveBytes variant from a Move
-    #[inline]
+    #[inline(always)]
     pub fn bytes(self: Move) -> MoveBytes {
         unsafe { self.b }
     }
 
     /// safely set MoveBytes variant in a Move
-    #[inline]
+    #[inline(always)]
     pub fn set_bytes(self: &mut Move, m: MoveBytes) {
         self.b = m
     }
 
     /// safely extract 32-bit value from a Move
-    #[inline]
+    #[inline(always)]
     pub fn value(self: Move) -> Int {
         unsafe { self.u }
     }
 
     /// safely set 32-bit value for a Move
-    #[inline]
+    #[inline(always)]
     pub fn set_value(self: &mut Move, value: Int) {
         self.u = value;
     }

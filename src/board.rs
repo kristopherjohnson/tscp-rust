@@ -502,9 +502,9 @@ pub fn makemove(d: &mut Data, m: MoveBytes) -> bool {
     d.castle &= CASTLE_MASK[m.from as usize] & CASTLE_MASK[m.to as usize];
     if (m.bits & 8) != 0 {
         if d.side == LIGHT {
-            d.ep = Int::from(m.to) + 8;
+            d.ep = m.to as Int + 8;
         } else {
-            d.ep = Int::from(m.to) - 8;
+            d.ep = m.to as Int - 8;
         }
     } else {
         d.ep = -1;
@@ -518,7 +518,7 @@ pub fn makemove(d: &mut Data, m: MoveBytes) -> bool {
     // move the piece
     d.color[m.to as usize] = d.side;
     if (m.bits & 32) != 0 {
-        d.piece[m.to as usize] = Int::from(m.promote);
+        d.piece[m.to as usize] = m.promote as Int;
     } else {
         d.piece[m.to as usize] = d.piece[m.from as usize];
     }

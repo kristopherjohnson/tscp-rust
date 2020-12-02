@@ -214,6 +214,7 @@ pub fn eval(d: &mut Data) -> Int {
     }
 }
 
+#[inline(always)]
 fn eval_light_pawn(d: &Data, sq: usize) -> Int {
     // the value to return
     let mut r = 0;
@@ -256,6 +257,7 @@ fn eval_light_pawn(d: &Data, sq: usize) -> Int {
     r
 }
 
+#[inline(always)]
 fn eval_dark_pawn(d: &Data, sq: usize) -> Int {
     // the value to return
     let mut r = 0;
@@ -298,6 +300,7 @@ fn eval_dark_pawn(d: &Data, sq: usize) -> Int {
     r
 }
 
+#[inline(always)]
 fn eval_light_king(d: &Data, sq: usize) -> Int {
     // the value to return
     let mut r = KING_PCSQ[sq];
@@ -337,34 +340,31 @@ fn eval_light_king(d: &Data, sq: usize) -> Int {
 
 /// eval_lkp(f) evaluates the Light King Pawn on file f
 
+#[inline(always)]
 fn eval_lkp(d: &Data, f: usize) -> Int {
     let mut r = 0;
 
     let rank_light = d.pawn_rank[LIGHT as usize][f];
 
-    if rank_light == 6 {
-        // pawn hasn't moved
-    } else if rank_light == 5 {
-        r -= 10; // pawn moved one square
-    } else if rank_light != 0 {
-        r -= 20; // pawn moved more than one square
-    } else {
-        r -= 25; // no pawn on this file
+    match rank_light {
+        6 => (),      // pawn hasn't moved
+        5 => r -= 10, // pawn moved one square
+        0 => r -= 25, // no pawn on this file
+        _ => (),      // pawn moved more than one square
     }
 
     let rank_dark = d.pawn_rank[DARK as usize][f];
 
-    if rank_dark == 7 {
-        r -= 15; // no enemy pawn
-    } else if rank_dark == 5 {
-        r -= 10; // enemy pawn on the 3rd rank
-    } else if rank_dark == 4 {
-        r -= 5; // enemy pawn on the 4th rank
+    match rank_dark {
+        7 => r -= 15, // no enemy pawn
+        5 => r -= 10, // enemy pawn on the 3rd rank
+        4 => r -= 5,  // enemy pawn on the 4th rank
+        _ => (),
     }
-
     r
 }
 
+#[inline(always)]
 fn eval_dark_king(d: &Data, sq: usize) -> Int {
     let mut r = KING_PCSQ[FLIP[sq]];
 
@@ -392,29 +392,26 @@ fn eval_dark_king(d: &Data, sq: usize) -> Int {
     r
 }
 
+#[inline(always)]
 fn eval_dkp(d: &Data, f: usize) -> Int {
     let mut r = 0;
 
     let rank_dark = d.pawn_rank[DARK as usize][f];
 
-    if rank_dark == 1 {
-        // do nothing
-    } else if rank_dark == 2 {
-        r -= 10;
-    } else if rank_dark != 7 {
-        r -= 20;
-    } else {
-        r -= 25;
+    match rank_dark {
+        1 => (),
+        2 => r -= 10,
+        7 => r -= 25,
+        _ => r -= 20,
     }
 
     let rank_light = d.pawn_rank[LIGHT as usize][f];
 
-    if rank_light == 0 {
-        r -= 15;
-    } else if rank_light == 2 {
-        r -= 10;
-    } else if rank_light == 3 {
-        r -= 5;
+    match rank_light {
+        0 => r -= 15,
+        2 => r -= 10,
+        3 => r -= 5,
+        _ => (),
     }
 
     r

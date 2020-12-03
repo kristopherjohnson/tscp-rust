@@ -121,18 +121,20 @@ fn attack(d: &Data, sq: usize, s: Int) -> bool {
             match d.piece[i] {
                 PAWN => match s {
                     LIGHT => {
-                        if col!(i) != 0 && i - 9 == sq {
+                        let col = col!(i);
+                        if col != 0 && i - 9 == sq {
                             return true;
                         }
-                        if col!(i) != 7 && i - 7 == sq {
+                        if col != 7 && i - 7 == sq {
                             return true;
                         }
                     }
                     _ => {
-                        if col!(i) != 0 && i + 7 == sq {
+                        let col = col!(i);
+                        if col != 0 && i + 7 == sq {
                             return true;
                         }
-                        if col!(i) != 7 && i + 9 == sq {
+                        if col != 7 && i + 9 == sq {
                             return true;
                         }
                     }
@@ -180,10 +182,11 @@ pub fn gen(d: &mut Data) {
             match d.piece[i] {
                 PAWN => match d.side {
                     LIGHT => {
-                        if col!(i) != 0 && d.color[i - 9] == DARK {
+                        let col = col!(i);
+                        if col != 0 && d.color[i - 9] == DARK {
                             gen_push!(d, i, i - 9, 17);
                         }
-                        if col!(i) != 7 && d.color[i - 7] == DARK {
+                        if col != 7 && d.color[i - 7] == DARK {
                             gen_push!(d, i, i - 7, 17);
                         }
                         if d.color[i - 8] == EMPTY {
@@ -194,10 +197,11 @@ pub fn gen(d: &mut Data) {
                         }
                     }
                     _ => {
-                        if col!(i) != 0 && d.color[i + 7] == LIGHT {
+                        let col = col!(i);
+                        if col != 0 && d.color[i + 7] == LIGHT {
                             gen_push!(d, i, i + 7, 17);
                         }
-                        if col!(i) != 7 && d.color[i + 9] == LIGHT {
+                        if col != 7 && d.color[i + 9] == LIGHT {
                             gen_push!(d, i, i + 9, 17);
                         }
                         if d.color[i + 8] == EMPTY {
@@ -263,13 +267,14 @@ pub fn gen(d: &mut Data) {
         let i_ep = d.ep as usize;
         match d.side {
             LIGHT => {
-                if col!(d.ep) != 0
+                let col = col!(d.ep);
+                if col != 0
                     && d.color[i_ep + 7] == LIGHT
                     && d.piece[i_ep + 7] == PAWN
                 {
                     gen_push!(d, d.ep + 7, d.ep, 21);
                 }
-                if col!(d.ep) != 7
+                if col != 7
                     && d.color[i_ep + 9] == LIGHT
                     && d.piece[i_ep + 9] == PAWN
                 {
@@ -277,13 +282,14 @@ pub fn gen(d: &mut Data) {
                 }
             }
             _ => {
-                if col!(d.ep) != 0
+                let col = col!(d.ep);
+                if col != 0
                     && d.color[i_ep - 9] == DARK
                     && d.piece[i_ep - 9] == PAWN
                 {
                     gen_push!(d, d.ep - 9, d.ep, 21);
                 }
-                if col!(d.ep) != 7
+                if col != 7
                     && d.color[i_ep - 7] == DARK
                     && d.piece[i_ep - 7] == PAWN
                 {
@@ -304,10 +310,11 @@ pub fn gen_caps(d: &mut Data) {
             match d.piece[i] {
                 PAWN => match d.side {
                     LIGHT => {
-                        if col!(i) != 0 && d.color[i - 9] == DARK {
+                        let col = col!(i);
+                        if col != 0 && d.color[i - 9] == DARK {
                             gen_push!(d, i, i - 9, 17);
                         }
-                        if col!(i) != 7 && d.color[i - 7] == DARK {
+                        if col != 7 && d.color[i - 7] == DARK {
                             gen_push!(d, i, i - 7, 17);
                         }
                         if i <= 15 && d.color[i - 8] == EMPTY {
@@ -315,10 +322,11 @@ pub fn gen_caps(d: &mut Data) {
                         }
                     }
                     _ => {
-                        if col!(i) != 0 && d.color[i + 7] == LIGHT {
+                        let col = col!(i);
+                        if col != 0 && d.color[i + 7] == LIGHT {
                             gen_push!(d, i, i + 7, 17);
                         }
-                        if col!(i) != 7 && d.color[i + 9] == LIGHT {
+                        if col != 7 && d.color[i + 9] == LIGHT {
                             gen_push!(d, i, i + 9, 17);
                         }
                         if i >= 48 && d.color[i + 8] == EMPTY {
@@ -354,18 +362,17 @@ pub fn gen_caps(d: &mut Data) {
     }
 
     if d.ep != -1 {
-        // #rust TODO Maybe there is a better way to avoid a bunch of "as usize"
-        // casts in the expressions below.
         let i_ep = d.ep as usize;
         match d.side {
             LIGHT => {
-                if col!(d.ep) != 0
+                let col = col!(d.ep);
+                if col != 0
                     && d.color[i_ep + 7] == LIGHT
                     && d.piece[i_ep + 7] == PAWN
                 {
                     gen_push!(d, d.ep + 7, d.ep, 21);
                 }
-                if col!(d.ep) != 7
+                if col != 7
                     && d.color[i_ep + 9] == LIGHT
                     && d.piece[i_ep + 9] == PAWN
                 {
@@ -373,13 +380,14 @@ pub fn gen_caps(d: &mut Data) {
                 }
             }
             _ => {
-                if col!(d.ep) != 0
+                let col = col!(d.ep);
+                if col != 0
                     && d.color[i_ep - 9] == DARK
                     && d.piece[i_ep - 9] == PAWN
                 {
                     gen_push!(d, d.ep - 9, d.ep, 21);
                 }
-                if col!(d.ep) != 7
+                if col != 7
                     && d.color[i_ep - 7] == DARK
                     && d.piece[i_ep - 7] == PAWN
                 {

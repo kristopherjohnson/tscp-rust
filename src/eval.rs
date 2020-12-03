@@ -157,9 +157,9 @@ pub fn eval(d: &mut Data) -> Int {
                     score[ILIGHT] += BISHOP_PCSQ[i];
                 }
                 ROOK => {
-                    if d.pawn_rank[ILIGHT][col!(i) + 1] == 0 {
-                        score[ILIGHT] += if d.pawn_rank[IDARK][col!(i) + 1] == 7
-                        {
+                    let col = col!(i);
+                    if d.pawn_rank[ILIGHT][col + 1] == 0 {
+                        score[ILIGHT] += if d.pawn_rank[IDARK][col + 1] == 7 {
                             ROOK_OPEN_FILE_BONUS
                         } else {
                             ROOK_SEMI_OPEN_FILE_BONUS
@@ -189,9 +189,9 @@ pub fn eval(d: &mut Data) -> Int {
                     score[IDARK] += BISHOP_PCSQ[FLIP[i]];
                 }
                 ROOK => {
-                    if d.pawn_rank[IDARK][col!(i) + 1] == 7 {
-                        score[IDARK] += if d.pawn_rank[ILIGHT][col!(i) + 1] == 0
-                        {
+                    let col = col!(i);
+                    if d.pawn_rank[IDARK][col + 1] == 7 {
+                        score[IDARK] += if d.pawn_rank[ILIGHT][col + 1] == 0 {
                             ROOK_OPEN_FILE_BONUS
                         } else {
                             ROOK_SEMI_OPEN_FILE_BONUS

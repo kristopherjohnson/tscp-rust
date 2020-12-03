@@ -118,40 +118,44 @@ pub fn in_check(d: &Data, s: Int) -> bool {
 fn attack(d: &Data, sq: usize, s: Int) -> bool {
     for i in 0..64 {
         if d.color[i] == s {
-            if d.piece[i] == PAWN {
-                if s == LIGHT {
-                    if col!(i) != 0 && i - 9 == sq {
-                        return true;
-                    }
-                    if col!(i) != 7 && i - 7 == sq {
-                        return true;
-                    }
-                } else {
-                    if col!(i) != 0 && i + 7 == sq {
-                        return true;
-                    }
-                    if col!(i) != 7 && i + 9 == sq {
-                        return true;
-                    }
-                }
-            } else {
-                for j in 0..(OFFSETS[d.piece[i] as usize] as usize) {
-                    let mut n = i as Int;
-                    loop {
-                        let m64 = MAILBOX64[n as usize];
-                        let offset = OFFSET[d.piece[i] as usize][j];
-                        n = MAILBOX[(m64 + offset) as usize];
-                        if n == -1 {
-                            break;
-                        }
-                        if n as usize == sq {
+            match d.piece[i] {
+                PAWN => match s {
+                    LIGHT => {
+                        if col!(i) != 0 && i - 9 == sq {
                             return true;
                         }
-                        if d.color[n as usize] != EMPTY {
-                            break;
+                        if col!(i) != 7 && i - 7 == sq {
+                            return true;
                         }
-                        if !SLIDE[d.piece[i] as usize] {
-                            break;
+                    }
+                    _ => {
+                        if col!(i) != 0 && i + 7 == sq {
+                            return true;
+                        }
+                        if col!(i) != 7 && i + 9 == sq {
+                            return true;
+                        }
+                    }
+                },
+                _ => {
+                    for j in 0..(OFFSETS[d.piece[i] as usize] as usize) {
+                        let mut n = i as Int;
+                        loop {
+                            let m64 = MAILBOX64[n as usize];
+                            let offset = OFFSET[d.piece[i] as usize][j];
+                            n = MAILBOX[(m64 + offset) as usize];
+                            if n == -1 {
+                                break;
+                            }
+                            if n as usize == sq {
+                                return true;
+                            }
+                            if d.color[n as usize] != EMPTY {
+                                break;
+                            }
+                            if !SLIDE[d.piece[i] as usize] {
+                                break;
+                            }
                         }
                     }
                 }
@@ -173,54 +177,58 @@ pub fn gen(d: &mut Data) {
 
     for i in 0..64 {
         if d.color[i] == d.side {
-            if d.piece[i] == PAWN {
-                if d.side == LIGHT {
-                    if col!(i) != 0 && d.color[i - 9] == DARK {
-                        gen_push!(d, i, i - 9, 17);
-                    }
-                    if col!(i) != 7 && d.color[i - 7] == DARK {
-                        gen_push!(d, i, i - 7, 17);
-                    }
-                    if d.color[i - 8] == EMPTY {
-                        gen_push!(d, i, i - 8, 16);
-                        if i >= 48 && d.color[i - 16] == EMPTY {
-                            gen_push!(d, i, i - 16, 24);
+            match d.piece[i] {
+                PAWN => match d.side {
+                    LIGHT => {
+                        if col!(i) != 0 && d.color[i - 9] == DARK {
+                            gen_push!(d, i, i - 9, 17);
                         }
-                    }
-                } else {
-                    if col!(i) != 0 && d.color[i + 7] == LIGHT {
-                        gen_push!(d, i, i + 7, 17);
-                    }
-                    if col!(i) != 7 && d.color[i + 9] == LIGHT {
-                        gen_push!(d, i, i + 9, 17);
-                    }
-                    if d.color[i + 8] == EMPTY {
-                        gen_push!(d, i, i + 8, 16);
-                        if i <= 15 && d.color[i + 16] == EMPTY {
-                            gen_push!(d, i, i + 16, 24);
+                        if col!(i) != 7 && d.color[i - 7] == DARK {
+                            gen_push!(d, i, i - 7, 17);
                         }
-                    }
-                }
-            } else {
-                for j in 0..(OFFSETS[d.piece[i] as usize] as usize) {
-                    let mut n = i as Int;
-                    loop {
-                        let m64 = MAILBOX64[n as usize];
-                        let offset = OFFSET[d.piece[i] as usize][j];
-                        n = MAILBOX[(m64 + offset) as usize];
-                        if n == -1 {
-                            break;
-                        }
-                        let color = d.color[n as usize];
-                        if color != EMPTY {
-                            if color == d.xside {
-                                gen_push!(d, i, n, 1);
+                        if d.color[i - 8] == EMPTY {
+                            gen_push!(d, i, i - 8, 16);
+                            if i >= 48 && d.color[i - 16] == EMPTY {
+                                gen_push!(d, i, i - 16, 24);
                             }
-                            break;
                         }
-                        gen_push!(d, i, n, 0);
-                        if !SLIDE[d.piece[i] as usize] {
-                            break;
+                    }
+                    _ => {
+                        if col!(i) != 0 && d.color[i + 7] == LIGHT {
+                            gen_push!(d, i, i + 7, 17);
+                        }
+                        if col!(i) != 7 && d.color[i + 9] == LIGHT {
+                            gen_push!(d, i, i + 9, 17);
+                        }
+                        if d.color[i + 8] == EMPTY {
+                            gen_push!(d, i, i + 8, 16);
+                            if i <= 15 && d.color[i + 16] == EMPTY {
+                                gen_push!(d, i, i + 16, 24);
+                            }
+                        }
+                    }
+                },
+                _ => {
+                    for j in 0..(OFFSETS[d.piece[i] as usize] as usize) {
+                        let mut n = i as Int;
+                        loop {
+                            let m64 = MAILBOX64[n as usize];
+                            let offset = OFFSET[d.piece[i] as usize][j];
+                            n = MAILBOX[(m64 + offset) as usize];
+                            if n == -1 {
+                                break;
+                            }
+                            let color = d.color[n as usize];
+                            if color != EMPTY {
+                                if color == d.xside {
+                                    gen_push!(d, i, n, 1);
+                                }
+                                break;
+                            }
+                            gen_push!(d, i, n, 0);
+                            if !SLIDE[d.piece[i] as usize] {
+                                break;
+                            }
                         }
                     }
                 }
@@ -229,19 +237,22 @@ pub fn gen(d: &mut Data) {
     }
 
     // generate castle moves
-    if d.side == LIGHT {
-        if (d.castle & 1) != 0 {
-            gen_push!(d, E1, G1, 2);
+    match d.side {
+        LIGHT => {
+            if (d.castle & 1) != 0 {
+                gen_push!(d, E1, G1, 2);
+            }
+            if (d.castle & 2) != 0 {
+                gen_push!(d, E1, C1, 2);
+            }
         }
-        if (d.castle & 2) != 0 {
-            gen_push!(d, E1, C1, 2);
-        }
-    } else {
-        if (d.castle & 4) != 0 {
-            gen_push!(d, E8, G8, 2);
-        }
-        if (d.castle & 8) != 0 {
-            gen_push!(d, E8, C8, 2);
+        _ => {
+            if (d.castle & 4) != 0 {
+                gen_push!(d, E8, G8, 2);
+            }
+            if (d.castle & 8) != 0 {
+                gen_push!(d, E8, C8, 2);
+            }
         }
     }
 
@@ -250,31 +261,34 @@ pub fn gen(d: &mut Data) {
         // #rust TODO Maybe there is a better way to avoid a bunch of "as usize"
         // casts in the expressions below.
         let i_ep = d.ep as usize;
-        if d.side == LIGHT {
-            if col!(d.ep) != 0
-                && d.color[i_ep + 7] == LIGHT
-                && d.piece[i_ep + 7] == PAWN
-            {
-                gen_push!(d, d.ep + 7, d.ep, 21);
+        match d.side {
+            LIGHT => {
+                if col!(d.ep) != 0
+                    && d.color[i_ep + 7] == LIGHT
+                    && d.piece[i_ep + 7] == PAWN
+                {
+                    gen_push!(d, d.ep + 7, d.ep, 21);
+                }
+                if col!(d.ep) != 7
+                    && d.color[i_ep + 9] == LIGHT
+                    && d.piece[i_ep + 9] == PAWN
+                {
+                    gen_push!(d, d.ep + 9, d.ep, 21);
+                }
             }
-            if col!(d.ep) != 7
-                && d.color[i_ep + 9] == LIGHT
-                && d.piece[i_ep + 9] == PAWN
-            {
-                gen_push!(d, d.ep + 9, d.ep, 21);
-            }
-        } else {
-            if col!(d.ep) != 0
-                && d.color[i_ep - 9] == DARK
-                && d.piece[i_ep - 9] == PAWN
-            {
-                gen_push!(d, d.ep - 9, d.ep, 21);
-            }
-            if col!(d.ep) != 7
-                && d.color[i_ep - 7] == DARK
-                && d.piece[i_ep - 7] == PAWN
-            {
-                gen_push!(d, d.ep - 7, d.ep, 21);
+            _ => {
+                if col!(d.ep) != 0
+                    && d.color[i_ep - 9] == DARK
+                    && d.piece[i_ep - 9] == PAWN
+                {
+                    gen_push!(d, d.ep - 9, d.ep, 21);
+                }
+                if col!(d.ep) != 7
+                    && d.color[i_ep - 7] == DARK
+                    && d.piece[i_ep - 7] == PAWN
+                {
+                    gen_push!(d, d.ep - 7, d.ep, 21);
+                }
             }
         }
     }
@@ -287,48 +301,51 @@ pub fn gen_caps(d: &mut Data) {
     d.first_move[d.ply + 1] = d.first_move[d.ply];
     for i in 0..64 {
         if d.color[i] == d.side {
-            if d.piece[i] == PAWN {
-                if d.side == LIGHT {
-                    if col!(i) != 0 && d.color[i - 9] == DARK {
-                        gen_push!(d, i, i - 9, 17);
-                    }
-                    if col!(i) != 7 && d.color[i - 7] == DARK {
-                        gen_push!(d, i, i - 7, 17);
-                    }
-                    if i <= 15 && d.color[i - 8] == EMPTY {
-                        gen_push!(d, i, i - 8, 16);
-                    }
-                }
-                if d.side == DARK {
-                    if col!(i) != 0 && d.color[i + 7] == LIGHT {
-                        gen_push!(d, i, i + 7, 17);
-                    }
-                    if col!(i) != 7 && d.color[i + 9] == LIGHT {
-                        gen_push!(d, i, i + 9, 17);
-                    }
-                    if i >= 48 && d.color[i + 8] == EMPTY {
-                        gen_push!(d, i, i + 8, 16);
-                    }
-                }
-            } else {
-                for j in 0..(OFFSETS[d.piece[i] as usize] as usize) {
-                    let mut n = i as Int;
-                    loop {
-                        let m64 = MAILBOX64[n as usize];
-                        let offset = OFFSET[d.piece[i] as usize][j];
-                        n = MAILBOX[(m64 + offset) as usize];
-                        if n == -1 {
-                            break;
+            match d.piece[i] {
+                PAWN => match d.side {
+                    LIGHT => {
+                        if col!(i) != 0 && d.color[i - 9] == DARK {
+                            gen_push!(d, i, i - 9, 17);
                         }
-                        let color = d.color[n as usize];
-                        if color != EMPTY {
-                            if color == d.xside {
-                                gen_push!(d, i, n, 1);
+                        if col!(i) != 7 && d.color[i - 7] == DARK {
+                            gen_push!(d, i, i - 7, 17);
+                        }
+                        if i <= 15 && d.color[i - 8] == EMPTY {
+                            gen_push!(d, i, i - 8, 16);
+                        }
+                    }
+                    _ => {
+                        if col!(i) != 0 && d.color[i + 7] == LIGHT {
+                            gen_push!(d, i, i + 7, 17);
+                        }
+                        if col!(i) != 7 && d.color[i + 9] == LIGHT {
+                            gen_push!(d, i, i + 9, 17);
+                        }
+                        if i >= 48 && d.color[i + 8] == EMPTY {
+                            gen_push!(d, i, i + 8, 16);
+                        }
+                    }
+                },
+                _ => {
+                    for j in 0..(OFFSETS[d.piece[i] as usize] as usize) {
+                        let mut n = i as Int;
+                        loop {
+                            let m64 = MAILBOX64[n as usize];
+                            let offset = OFFSET[d.piece[i] as usize][j];
+                            n = MAILBOX[(m64 + offset) as usize];
+                            if n == -1 {
+                                break;
                             }
-                            break;
-                        }
-                        if !SLIDE[d.piece[i] as usize] {
-                            break;
+                            let color = d.color[n as usize];
+                            if color != EMPTY {
+                                if color == d.xside {
+                                    gen_push!(d, i, n, 1);
+                                }
+                                break;
+                            }
+                            if !SLIDE[d.piece[i] as usize] {
+                                break;
+                            }
                         }
                     }
                 }
@@ -340,31 +357,34 @@ pub fn gen_caps(d: &mut Data) {
         // #rust TODO Maybe there is a better way to avoid a bunch of "as usize"
         // casts in the expressions below.
         let i_ep = d.ep as usize;
-        if d.side == LIGHT {
-            if col!(d.ep) != 0
-                && d.color[i_ep + 7] == LIGHT
-                && d.piece[i_ep + 7] == PAWN
-            {
-                gen_push!(d, d.ep + 7, d.ep, 21);
+        match d.side {
+            LIGHT => {
+                if col!(d.ep) != 0
+                    && d.color[i_ep + 7] == LIGHT
+                    && d.piece[i_ep + 7] == PAWN
+                {
+                    gen_push!(d, d.ep + 7, d.ep, 21);
+                }
+                if col!(d.ep) != 7
+                    && d.color[i_ep + 9] == LIGHT
+                    && d.piece[i_ep + 9] == PAWN
+                {
+                    gen_push!(d, d.ep + 9, d.ep, 21);
+                }
             }
-            if col!(d.ep) != 7
-                && d.color[i_ep + 9] == LIGHT
-                && d.piece[i_ep + 9] == PAWN
-            {
-                gen_push!(d, d.ep + 9, d.ep, 21);
-            }
-        } else {
-            if col!(d.ep) != 0
-                && d.color[i_ep - 9] == DARK
-                && d.piece[i_ep - 9] == PAWN
-            {
-                gen_push!(d, d.ep - 9, d.ep, 21);
-            }
-            if col!(d.ep) != 7
-                && d.color[i_ep - 7] == DARK
-                && d.piece[i_ep - 7] == PAWN
-            {
-                gen_push!(d, d.ep - 7, d.ep, 21);
+            _ => {
+                if col!(d.ep) != 0
+                    && d.color[i_ep - 9] == DARK
+                    && d.piece[i_ep - 9] == PAWN
+                {
+                    gen_push!(d, d.ep - 9, d.ep, 21);
+                }
+                if col!(d.ep) != 7
+                    && d.color[i_ep - 7] == DARK
+                    && d.piece[i_ep - 7] == PAWN
+                {
+                    gen_push!(d, d.ep - 7, d.ep, 21);
+                }
             }
         }
     }
@@ -379,14 +399,19 @@ pub fn gen_caps(d: &mut Data) {
 
 fn gen_push(d: &mut Data, from: usize, to: usize, bits: u8) {
     if (bits & 16) != 0 {
-        if d.side == LIGHT {
-            if to <= H8 {
-                gen_promote(d, from, to, bits);
-                return;
+        match d.side {
+            LIGHT => {
+                if to <= H8 {
+                    gen_promote(d, from, to, bits);
+                    return;
+                }
             }
-        } else if to >= A1 {
-            gen_promote(d, from, to, bits);
-            return;
+            _ => {
+                if to >= A1 {
+                    gen_promote(d, from, to, bits);
+                    return;
+                }
+            }
         }
     }
     let g = &mut d.gen_dat[d.first_move[d.ply + 1] as usize];
@@ -395,10 +420,9 @@ fn gen_push(d: &mut Data, from: usize, to: usize, bits: u8) {
     g.m.b.to = to as u8;
     g.m.b.promote = 0;
     g.m.b.bits = bits;
-    if d.color[to] != EMPTY {
-        g.score = 1_000_000 + d.piece[to] * 10 - d.piece[from];
-    } else {
-        g.score = d.history[from][to];
+    g.score = match d.color[to] {
+        EMPTY => d.history[from][to],
+        _ => 1_000_000 + d.piece[to] * 10 - d.piece[from],
     }
 }
 
@@ -501,10 +525,9 @@ pub fn makemove(d: &mut Data, m: MoveBytes) -> bool {
     // update the castle, en passant, and fifty-move-draw variables
     d.castle &= CASTLE_MASK[m.from as usize] & CASTLE_MASK[m.to as usize];
     if (m.bits & 8) != 0 {
-        if d.side == LIGHT {
-            d.ep = m.to as Int + 8;
-        } else {
-            d.ep = m.to as Int - 8;
+        d.ep = match d.side {
+            LIGHT => m.to as Int + 8,
+            _ => m.to as Int - 8,
         }
     } else {
         d.ep = -1;
@@ -516,19 +539,23 @@ pub fn makemove(d: &mut Data, m: MoveBytes) -> bool {
     }
 
     // move the piece
-    d.color[m.to as usize] = d.side;
-    if (m.bits & 32) != 0 {
-        d.piece[m.to as usize] = m.promote as Int;
+    let m_to = m.to as usize;
+    let m_from = m.from as usize;
+    d.color[m_to] = d.side;
+    d.piece[m_to] = if (m.bits & 32) != 0 {
+        m.promote as Int
     } else {
-        d.piece[m.to as usize] = d.piece[m.from as usize];
-    }
-    d.color[m.from as usize] = EMPTY;
-    d.piece[m.from as usize] = EMPTY;
+        d.piece[m_from]
+    };
+    d.color[m_from] = EMPTY;
+    d.piece[m_from] = EMPTY;
 
     // erase the pawn if this is an en passant move
     if (m.bits & 4) != 0 {
-        let pawn_sq =
-            if d.side == LIGHT { m.to + 8 } else { m.to - 8 } as usize;
+        let pawn_sq = match d.side {
+            LIGHT => m_to + 8,
+            _ => m_to - 8,
+        };
         d.color[pawn_sq] = EMPTY;
         d.piece[pawn_sq] = EMPTY;
     }
@@ -564,17 +591,20 @@ pub fn takeback(d: &mut Data) {
     d.fifty = d.hist_dat[d.hply].fifty;
     d.hash = d.hist_dat[d.hply].hash;
     d.color[m.from as usize] = d.side;
-    if (m.bits & 32) != 0 {
-        d.piece[m.from as usize] = PAWN;
+    d.piece[m.from as usize] = if (m.bits & 32) != 0 {
+        PAWN
     } else {
-        d.piece[m.from as usize] = d.piece[m.to as usize];
-    }
-    if d.hist_dat[d.hply].capture == EMPTY {
-        d.color[m.to as usize] = EMPTY;
-        d.piece[m.to as usize] = EMPTY;
-    } else {
-        d.color[m.to as usize] = d.xside;
-        d.piece[m.to as usize] = d.hist_dat[d.hply].capture;
+        d.piece[m.to as usize]
+    };
+    match d.hist_dat[d.hply].capture {
+        EMPTY => {
+            d.color[m.to as usize] = EMPTY;
+            d.piece[m.to as usize] = EMPTY;
+        }
+        _ => {
+            d.color[m.to as usize] = d.xside;
+            d.piece[m.to as usize] = d.hist_dat[d.hply].capture;
+        }
     }
     if (m.bits & 2) != 0 {
         let from: usize;
@@ -604,8 +634,10 @@ pub fn takeback(d: &mut Data) {
         d.piece[from] = EMPTY;
     }
     if (m.bits & 4) != 0 {
-        let pawn_sq =
-            if d.side == LIGHT { m.to + 8 } else { m.to - 8 } as usize;
+        let pawn_sq = match d.side {
+            LIGHT => m.to + 8,
+            _ => m.to - 8,
+        } as usize;
         d.color[pawn_sq] = d.xside;
         d.piece[pawn_sq] = PAWN;
     }

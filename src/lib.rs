@@ -280,16 +280,17 @@ pub fn xboard(d: &mut Data) {
             }
             _ => {
                 let m = parse_move(d, &command);
-                if m == -1 {
-                    println!("Error (unknown command): {}", command);
-                } else {
-                    let m = d.gen_dat[m as usize].m.bytes();
-                    if !makemove(d, m) {
-                        println!("Error (unknown command): {}", command);
-                    } else {
-                        d.ply = 0;
-                        gen(d);
-                        print_result(d);
+                match m {
+                    -1 => println!("Error (unknown command): {}", command),
+                    _ => {
+                        let m = d.gen_dat[m as usize].m.bytes();
+                        if !makemove(d, m) {
+                            println!("Error (unknown command): {}", command);
+                        } else {
+                            d.ply = 0;
+                            gen(d);
+                            print_result(d);
+                        }
                     }
                 }
             }
@@ -310,10 +311,9 @@ pub fn print_result(d: &mut Data) {
     }
     if i == d.first_move[1] {
         if in_check(d, d.side) {
-            if d.side == LIGHT {
-                println!("0-1 {{Black mates}}");
-            } else {
-                println!("1-0 {{White mates}}");
+            match d.side {
+                LIGHT => println!("0-1 {{Black mates}}"),
+                _ => println!("1-0 {{White mates}}"),
             }
         } else {
             println!("1/2-1/2 {{Stalemate}}");

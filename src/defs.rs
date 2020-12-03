@@ -14,12 +14,17 @@ pub const HIST_STACK: usize = 400;
 pub const LIGHT: Int = 0;
 pub const DARK: Int = 1;
 
+pub const ILIGHT: usize = LIGHT as usize;
+pub const IDARK: usize = DARK as usize;
+
 pub const PAWN: Int = 0;
 pub const KNIGHT: Int = 1;
 pub const BISHOP: Int = 2;
 pub const ROOK: Int = 3;
 pub const QUEEN: Int = 4;
 pub const KING: Int = 5;
+
+pub const IPAWN: usize = PAWN as usize;
 
 pub const EMPTY: Int = 6;
 

@@ -5,7 +5,6 @@
 //
 // Rust port by Kristopher Johnson
 
-use std::char;
 use std::io;
 use std::io::prelude::*;
 use std::time::{SystemTime, UNIX_EPOCH};
@@ -22,13 +21,9 @@ pub mod eval;
 pub mod scan;
 pub mod search;
 
-use crate::board::{gen, in_check, init_board, makemove, set_hash, takeback};
-use crate::book::{close_book, open_book};
 use crate::data::{Data, PIECE_CHAR};
 use crate::defs::{Int, MoveBytes, BISHOP, DARK, EMPTY, KNIGHT, LIGHT, ROOK};
-use crate::scan::{scan_int, scan_token};
 use crate::search::ThinkOutput::*;
-use crate::search::{reps, think};
 
 /// get_ms() returns the milliseconds elapsed since midnight, January 1, 1970
 
@@ -95,9 +90,9 @@ pub fn parse_move(d: &Data, s: &str) -> Int {
 
 pub fn move_str(m: MoveBytes) -> String {
     unsafe {
-        let from_col = char::from_u32_unchecked(col!(m.from) as u32 + 'a' as u32);
+        let from_col = std::char::from_u32_unchecked(col!(m.from) as u32 + 'a' as u32);
         let from_row = 8 - row!(m.from);
-        let to_col = char::from_u32_unchecked(col!(m.to) as u32 + 'a' as u32);
+        let to_col = std::char::from_u32_unchecked(col!(m.to) as u32 + 'a' as u32);
         let to_row = 8 - row!(m.to);
 
         if (m.bits & 32) != 0 {
@@ -130,7 +125,7 @@ pub fn print_board(d: &Data) {
                 let light_char = PIECE_CHAR[d.piece[i as usize] as usize];
                 let dark_u32 = light_char as u32 + 'a' as u32 - 'A' as u32;
                 unsafe {
-                    print!(" {}", char::from_u32_unchecked(dark_u32));
+                    print!(" {}", std::char::from_u32_unchecked(dark_u32));
                 }
             }
             _ => {}
@@ -153,28 +148,28 @@ pub fn xboard(d: &mut Data) {
         libc::signal(libc::SIGINT, libc::SIG_IGN);
     }
     println!();
-    init_board(d);
-    gen(d);
+    board::init_board(d);
+    board::gen(d);
     let mut computer_side = EMPTY;
     loop {
         io::stdout()
             .flush()
             .expect("unable to flush standard output");
         if d.side == computer_side {
-            think(d, post);
+            search::think(d, post);
             if d.pv[0][0].value() == 0 {
                 computer_side = EMPTY;
                 continue;
             }
             let m = d.pv[0][0].bytes();
             println!("move {}", move_str(m));
-            makemove(d, m);
+            board::makemove(d, m);
             d.ply = 0;
-            gen(d);
+            board::gen(d);
             print_result(d);
             continue;
         }
-        let command = match scan_token() {
+        let command = match scan::scan_token() {
             Ok(s) => s,
             Err(err) => {
                 println!("input error: {}", err);
@@ -188,8 +183,8 @@ pub fn xboard(d: &mut Data) {
         match command.as_ref() {
             "xboard" => continue,
             "new" => {
-                init_board(d);
-                gen(d);
+                board::init_board(d);
+                board::gen(d);
                 computer_side = DARK;
             }
             "quit" => return,
@@ -199,17 +194,17 @@ pub fn xboard(d: &mut Data) {
             "white" => {
                 d.side = LIGHT;
                 d.xside = DARK;
-                gen(d);
+                board::gen(d);
                 computer_side = DARK;
             }
             "black" => {
                 d.side = DARK;
                 d.xside = LIGHT;
-                gen(d);
+                board::gen(d);
                 computer_side = LIGHT;
             }
             "st" => {
-                let n = match scan_int() {
+                let n = match scan::scan_int() {
                     Ok(n) => n,
                     Err(err) => {
                         println!("unable to read st argument: {}", err);
@@ -220,7 +215,7 @@ pub fn xboard(d: &mut Data) {
                 d.max_depth = 32;
             }
             "sd" => {
-                let n = match scan_int() {
+                let n = match scan::scan_int() {
                     Ok(n) => n,
                     Err(err) => {
                         println!("unable to read sd argument: {}", err);
@@ -231,7 +226,7 @@ pub fn xboard(d: &mut Data) {
                 d.max_time = 1 << 25;
             }
             "time" => {
-                let n = match scan_int() {
+                let n = match scan::scan_int() {
                     Ok(n) => n,
                     Err(err) => {
                         println!("unable to read time argument: {}", err);
@@ -246,7 +241,7 @@ pub fn xboard(d: &mut Data) {
                 computer_side = d.side;
             }
             "hint" => {
-                think(d, NoOutput);
+                search::think(d, NoOutput);
                 if d.pv[0][0].value() == 0 {
                     continue;
                 }
@@ -256,18 +251,18 @@ pub fn xboard(d: &mut Data) {
                 if d.hply == 0 {
                     continue;
                 }
-                takeback(d);
+                board::takeback(d);
                 d.ply = 0;
-                gen(d);
+                board::gen(d);
             }
             "remove" => {
                 if d.hply < 2 {
                     continue;
                 }
-                takeback(d);
-                takeback(d);
+                board::takeback(d);
+                board::takeback(d);
                 d.ply = 0;
-                gen(d);
+                board::gen(d);
             }
             "post" => {
                 post = XboardOutput;
@@ -281,11 +276,11 @@ pub fn xboard(d: &mut Data) {
                     -1 => println!("Error (unknown command): {}", command),
                     _ => {
                         let m = d.gen_dat[m as usize].m.bytes();
-                        if !makemove(d, m) {
+                        if !board::makemove(d, m) {
                             println!("Error (unknown command): {}", command);
                         } else {
                             d.ply = 0;
-                            gen(d);
+                            board::gen(d);
                             print_result(d);
                         }
                     }
@@ -300,14 +295,14 @@ pub fn xboard(d: &mut Data) {
 pub fn print_result(d: &mut Data) {
     let mut i = 0;
     while i < d.first_move[1] {
-        if makemove(d, d.gen_dat[i].m.bytes()) {
-            takeback(d);
+        if board::makemove(d, d.gen_dat[i].m.bytes()) {
+            board::takeback(d);
             break;
         }
         i += 1;
     }
     if i == d.first_move[1] {
-        if in_check(d, d.side) {
+        if board::in_check(d, d.side) {
             match d.side {
                 LIGHT => println!("0-1 {{Black mates}}"),
                 _ => println!("1-0 {{White mates}}"),
@@ -315,7 +310,7 @@ pub fn print_result(d: &mut Data) {
         } else {
             println!("1/2-1/2 {{Stalemate}}");
         }
-    } else if reps(d) == 2 {
+    } else if search::reps(d) == 2 {
         println!("1/2-1/2 {{Draw by repetition}}");
     } else if d.fifty >= 100 {
         println!("1/2-1/2 {{Draw by fifty move rule}}");
@@ -354,7 +349,7 @@ const BENCH_PIECE: [Int; 64] = [
 pub fn bench(d: &mut Data) {
     // setting the position to a non-initial position confuses the opening book
     // code.
-    close_book(d);
+    book::close_book(d);
 
     d.color[..64].clone_from_slice(&BENCH_COLOR[..64]);
     d.piece[..64].clone_from_slice(&BENCH_PIECE[..64]);
@@ -365,14 +360,14 @@ pub fn bench(d: &mut Data) {
     d.fifty = 0;
     d.ply = 0;
     d.hply = 0;
-    set_hash(d);
+    board::set_hash(d);
     print_board(d);
     d.max_time = 1 << 25;
     d.max_depth = 5;
 
     let mut t: [Int; 3] = [0; 3];
     for x in &mut t {
-        think(d, NormalOutput);
+        search::think(d, NormalOutput);
         *x = (get_ms() - d.start_time) as Int;
         println!("Time: {} ms", *x);
     }
@@ -400,7 +395,7 @@ pub fn bench(d: &mut Data) {
         nps / 243_169.0
     );
 
-    init_board(d);
-    open_book(d);
-    gen(d);
+    board::init_board(d);
+    book::open_book(d);
+    board::gen(d);
 }

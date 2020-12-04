@@ -8,14 +8,13 @@
 use std::io;
 use std::io::prelude::*;
 
-use tscp::board::{gen, init_board, init_hash, makemove, takeback};
-use tscp::book::{close_book, open_book};
+use tscp::board;
+use tscp::book;
 use tscp::data::Data;
 use tscp::defs::EMPTY;
-use tscp::scan::{scan_int, scan_token};
-use tscp::search::think;
+use tscp::scan;
+use tscp::search;
 use tscp::search::ThinkOutput::*;
-use tscp::{bench, move_str, parse_move, print_board, print_result, xboard};
 
 const BANNER: [&str; 9] = [
     "",
@@ -53,10 +52,10 @@ fn main() {
     print_lines(&BANNER);
 
     let mut d = Data::new();
-    init_hash(&mut d);
-    init_board(&mut d);
-    open_book(&mut d);
-    gen(&mut d);
+    board::init_hash(&mut d);
+    board::init_board(&mut d);
+    book::open_book(&mut d);
+    board::gen(&mut d);
     let mut computer_side = EMPTY;
     d.max_time = 1 << 25;
     d.max_depth = 4;
@@ -65,25 +64,25 @@ fn main() {
             // computer's turn
 
             // think about the move and make it
-            think(&mut d, NormalOutput);
+            search::think(&mut d, NormalOutput);
             if d.pv[0][0].value() == 0 {
                 println!("(no legal moves");
                 computer_side = EMPTY;
                 continue;
             }
             let m = d.pv[0][0].bytes();
-            println!("Computer's move: {}", move_str(m));
-            makemove(&mut d, m);
+            println!("Computer's move: {}", tscp::move_str(m));
+            board::makemove(&mut d, m);
             d.ply = 0;
-            gen(&mut d);
-            print_result(&mut d);
+            board::gen(&mut d);
+            tscp::print_result(&mut d);
             continue;
         }
 
         // get user input
         print!("tscp> ");
         io::stdout().flush().expect("unable to flush prompt output");
-        let s = match scan_token() {
+        let s = match scan::scan_token() {
             Ok(s) => s,
             Err(err) => {
                 println!("input error: {}", err);
@@ -104,7 +103,7 @@ fn main() {
                 continue;
             }
             "st" => {
-                let n = match scan_int() {
+                let n = match scan::scan_int() {
                     Ok(n) => n,
                     Err(err) => {
                         println!("unable to read st argument: {}", err);
@@ -116,7 +115,7 @@ fn main() {
                 continue;
             }
             "sd" => {
-                let n = match scan_int() {
+                let n = match scan::scan_int() {
                     Ok(n) => n,
                     Err(err) => {
                         println!("unable to read sd argument: {}", err);
@@ -132,24 +131,24 @@ fn main() {
                     continue;
                 }
                 computer_side = EMPTY;
-                takeback(&mut d);
+                board::takeback(&mut d);
                 d.ply = 0;
-                gen(&mut d);
+                board::gen(&mut d);
                 continue;
             }
             "new" => {
                 computer_side = EMPTY;
-                init_board(&mut d);
-                gen(&mut d);
+                board::init_board(&mut d);
+                board::gen(&mut d);
                 continue;
             }
             "d" => {
-                print_board(&d);
+                tscp::print_board(&d);
                 continue;
             }
             "bench" => {
                 computer_side = EMPTY;
-                bench(&mut d);
+                tscp::bench(&mut d);
                 continue;
             }
             "bye" => {
@@ -157,7 +156,7 @@ fn main() {
                 break;
             }
             "xboard" => {
-                xboard(&mut d);
+                tscp::xboard(&mut d);
                 break;
             }
             "help" => {
@@ -166,21 +165,21 @@ fn main() {
             }
             _ => {
                 // maybe the user entered a move?
-                let m = parse_move(&d, &s);
+                let m = tscp::parse_move(&d, &s);
                 if m == -1 {
                     println!("Illegal move.");
                 } else {
                     let m = d.gen_dat[m as usize].m.bytes();
-                    if !makemove(&mut d, m) {
+                    if !board::makemove(&mut d, m) {
                         println!("Illegal move.");
                     } else {
                         d.ply = 0;
-                        gen(&mut d);
-                        print_result(&mut d);
+                        board::gen(&mut d);
+                        tscp::print_result(&mut d);
                     }
                 }
             }
         }
     }
-    close_book(&mut d);
+    book::close_book(&mut d);
 }

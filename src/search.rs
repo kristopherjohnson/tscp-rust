@@ -5,14 +5,14 @@
 //
 // Rust port by Kristopher Johnson
 
-use crate::board::{gen, gen_caps, in_check, makemove, takeback};
-use crate::book::book_move;
+use crate::board;
+use crate::book;
 use crate::data::Data;
 use crate::defs::{Int, Move, HIST_STACK, MAX_PLY};
-use crate::eval::eval;
-use crate::{get_ms, move_str};
+use crate::eval;
 
-use std::io::{stdout, Write};
+use std::io;
+use std::io::Write;
 
 /// #rust The original C code uses setjmp/longjmp to unwind the stack and exit
 /// if thinking-time expires during search().  Rust doesn't make it easy to use
@@ -38,12 +38,12 @@ pub enum ThinkOutput {
 
 pub fn think(d: &mut Data, output: ThinkOutput) {
     // try the opening book first
-    d.pv[0][0].set_value(book_move(d));
+    d.pv[0][0].set_value(book::book_move(d));
     if d.pv[0][0].value() != -1 {
         return;
     }
 
-    d.start_time = get_ms();
+    d.start_time = crate::get_ms();
     d.stop_time = d.start_time + d.max_time as u128;
 
     d.ply = 0;
@@ -68,7 +68,7 @@ pub fn think(d: &mut Data, output: ThinkOutput) {
             SearchResult::Timeout => {
                 // make sure to take back the line we were searching
                 while d.ply != 0 {
-                    takeback(d);
+                    board::takeback(d);
                 }
                 return;
             }
@@ -79,15 +79,21 @@ pub fn think(d: &mut Data, output: ThinkOutput) {
                         print!("{:3}  {:9}  {:5} ", i, d.nodes, x);
                     }
                     ThinkOutput::XboardOutput => {
-                        print!("{} {} {} {}", i, x, (get_ms() - d.start_time) / 10, d.nodes);
+                        print!(
+                            "{} {} {} {}",
+                            i,
+                            x,
+                            (crate::get_ms() - d.start_time) / 10,
+                            d.nodes
+                        );
                     }
                 }
                 if output != ThinkOutput::NoOutput {
                     for j in 0..d.pv_length[0] {
-                        print!(" {}", move_str(d.pv[0][j].bytes()));
+                        print!(" {}", crate::move_str(d.pv[0][j].bytes()));
                     }
                     println!();
-                    stdout().flush().expect("flush");
+                    io::stdout().flush().expect("flush");
                 }
                 if x > 9000 || x < -9000 {
                     return;
@@ -124,19 +130,19 @@ fn search(d: &mut Data, alpha: Int, beta: Int, depth: Int) -> SearchResult {
 
     // are we too deep?
     if d.ply >= MAX_PLY - 1 {
-        return SearchResult::Value(eval(d));
+        return SearchResult::Value(eval::eval(d));
     }
     if d.hply >= HIST_STACK - 1 {
-        return SearchResult::Value(eval(d));
+        return SearchResult::Value(eval::eval(d));
     }
 
     // are we in check? if so, we want to search deeper
     let mut depth = depth;
-    let c = in_check(d, d.side);
+    let c = board::in_check(d, d.side);
     if c {
         depth += 1;
     }
-    gen(d);
+    board::gen(d);
     if d.follow_pv {
         // are we following the PV?
         sort_pv(d);
@@ -148,7 +154,7 @@ fn search(d: &mut Data, alpha: Int, beta: Int, depth: Int) -> SearchResult {
     // loop through the moves
     for i in d.first_move[d.ply]..d.first_move[d.ply + 1] {
         sort(d, i);
-        if !makemove(d, d.gen_dat[i].m.bytes()) {
+        if !board::makemove(d, d.gen_dat[i].m.bytes()) {
             continue;
         }
         f = true;
@@ -158,7 +164,7 @@ fn search(d: &mut Data, alpha: Int, beta: Int, depth: Int) -> SearchResult {
             }
             SearchResult::Value(value) => {
                 x = -value;
-                takeback(d);
+                board::takeback(d);
                 if x > alpha {
                     // this move caused a cutoff, so increase the history value
                     // so it gets ordered high next time so we can search it
@@ -218,14 +224,14 @@ fn quiesce(d: &mut Data, alpha: Int, beta: Int) -> SearchResult {
 
     // are we too deep?
     if d.ply >= MAX_PLY - 1 {
-        return SearchResult::Value(eval(d));
+        return SearchResult::Value(eval::eval(d));
     }
     if d.hply >= HIST_STACK - 1 {
-        return SearchResult::Value(eval(d));
+        return SearchResult::Value(eval::eval(d));
     }
 
     // check with the evaluation function
-    let mut x = eval(d);
+    let mut x = eval::eval(d);
     if x >= beta {
         return SearchResult::Value(beta);
     }
@@ -234,7 +240,7 @@ fn quiesce(d: &mut Data, alpha: Int, beta: Int) -> SearchResult {
         alpha = x;
     }
 
-    gen_caps(d);
+    board::gen_caps(d);
     if d.follow_pv {
         // are we following the PV?
         sort_pv(d);
@@ -243,7 +249,7 @@ fn quiesce(d: &mut Data, alpha: Int, beta: Int) -> SearchResult {
     // loop through the moves
     for i in d.first_move[d.ply]..d.first_move[d.ply + 1] {
         sort(d, i);
-        if !makemove(d, d.gen_dat[i].m.bytes()) {
+        if !board::makemove(d, d.gen_dat[i].m.bytes()) {
             continue;
         }
         match quiesce(d, -beta, -alpha) {
@@ -252,7 +258,7 @@ fn quiesce(d: &mut Data, alpha: Int, beta: Int) -> SearchResult {
             }
             SearchResult::Value(value) => {
                 x = -value;
-                takeback(d);
+                board::takeback(d);
                 if x > alpha {
                     if x >= beta {
                         return SearchResult::Value(beta);
@@ -327,7 +333,7 @@ fn sort(d: &mut Data, from: usize) {
 
 fn checkup(d: &Data) -> bool {
     // is the engine's time up? if so, unwind back to think()
-    if get_ms() >= d.stop_time {
+    if crate::get_ms() >= d.stop_time {
         return false;
     }
     true

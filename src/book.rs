@@ -8,11 +8,9 @@
 use std::fs::File;
 use std::io::prelude::*;
 use std::io::BufReader;
-use std::ptr;
 
 use crate::data::Data;
 use crate::defs::Int;
-use crate::{move_str, parse_move};
 
 // #rust The original C code keeps the book.txt file open throughout the
 // lifetime of the program and re-reads its contents whenever it wants to look
@@ -26,7 +24,7 @@ use crate::{move_str, parse_move};
 pub fn open_book(d: &mut Data) {
     unsafe {
         // srand(time(NULL));
-        libc::srand(libc::time(ptr::null_mut()) as u32);
+        libc::srand(libc::time(std::ptr::null_mut()) as u32);
     }
 
     let f = match File::open("book.txt") {
@@ -71,7 +69,7 @@ pub fn book_move(d: &Data) -> Int {
     let mut line = String::from("");
     let mut j: Int;
     for i in 0..d.hply {
-        line = line + &format!("{} ", move_str(d.hist_dat[i].m.bytes()));
+        line = line + &format!("{} ", crate::move_str(d.hist_dat[i].m.bytes()));
     }
 
     // compare line to each line in the opening book
@@ -81,7 +79,7 @@ pub fn book_move(d: &Data) -> Int {
         // starts_with() method.
         if book_line.starts_with(&line) {
             // parse the book move that continues the line
-            let m = parse_move(d, &book_line[line.len()..]);
+            let m = crate::parse_move(d, &book_line[line.len()..]);
             if m == -1 {
                 continue;
             }

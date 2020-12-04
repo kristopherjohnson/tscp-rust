@@ -5,7 +5,14 @@
 //
 // Rust port by Kristopher Johnson
 
-pub type Int = i64;
+// #rust The original C program uses the `int` type extensively.  We'll use a
+// type definition here so we can experiment with performance with different
+// integer sizes, but generally `isize` should be best because the C code often
+// uses `int` values as array indexes, and we cast to `usize` a lot.
+//
+// In general, the Rust port declares C `int` values as `usize` if they are
+// used as array indexes, or as `Int` otherwise.
+pub type Int = isize;
 
 pub const GEN_STACK: usize = 1120;
 pub const MAX_PLY: usize = 32;

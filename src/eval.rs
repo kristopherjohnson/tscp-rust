@@ -6,9 +6,7 @@
 // Rust port by Kristopher Johnson
 
 use crate::data::Data;
-use crate::defs::{
-    Int, BISHOP, EMPTY, IDARK, ILIGHT, IPAWN, KING, KNIGHT, LIGHT, PAWN, ROOK,
-};
+use crate::defs::{Int, BISHOP, EMPTY, IDARK, ILIGHT, IPAWN, KING, KNIGHT, LIGHT, PAWN, ROOK};
 
 const DOUBLED_PAWN_PENALTY: Int = 10;
 const ISOLATED_PAWN_PENALTY: Int = 20;
@@ -132,8 +130,7 @@ pub fn eval(d: &mut Data) -> Int {
                 }
             }
             _ => {
-                d.piece_mat[d.color[i] as usize] +=
-                    PIECE_VALUE[d.piece[i] as usize];
+                d.piece_mat[d.color[i] as usize] += PIECE_VALUE[d.piece[i] as usize];
             }
         }
     }
@@ -245,9 +242,7 @@ fn eval_light_pawn(d: &Data, sq: usize) -> Int {
         r -= ISOLATED_PAWN_PENALTY;
     }
     // if it's not isolated, it might be backwards
-    else if (d.pawn_rank[ILIGHT][f - 1] < row)
-        && (d.pawn_rank[ILIGHT][f + 1] < row)
-    {
+    else if (d.pawn_rank[ILIGHT][f - 1] < row) && (d.pawn_rank[ILIGHT][f + 1] < row) {
         r -= BACKWARDS_PAWN_PENALTY;
     }
 
@@ -286,9 +281,7 @@ fn eval_dark_pawn(d: &Data, sq: usize) -> Int {
         r -= ISOLATED_PAWN_PENALTY;
     }
     // if it's not isolated, it might be backwards
-    else if (d.pawn_rank[IDARK][f - 1] > row)
-        && (d.pawn_rank[IDARK][f + 1] > row)
-    {
+    else if (d.pawn_rank[IDARK][f - 1] > row) && (d.pawn_rank[IDARK][f + 1] > row) {
         r -= BACKWARDS_PAWN_PENALTY;
     }
 

@@ -6,12 +6,11 @@
 // Rust port by Kristopher Johnson
 
 use crate::data::{
-    Data, CASTLE_MASK, INIT_COLOR, INIT_PIECE, MAILBOX, MAILBOX64, OFFSET,
-    OFFSETS, SLIDE,
+    Data, CASTLE_MASK, INIT_COLOR, INIT_PIECE, MAILBOX, MAILBOX64, OFFSET, OFFSETS, SLIDE,
 };
 use crate::defs::{
-    Int, MoveBytes, A1, A8, B1, B8, C1, C8, D1, D8, DARK, E1, E8, EMPTY, F1,
-    F8, G1, G8, H1, H8, KING, KNIGHT, LIGHT, PAWN, QUEEN, ROOK,
+    Int, MoveBytes, A1, A8, B1, B8, C1, C8, D1, D8, DARK, E1, E8, EMPTY, F1, F8, G1, G8, H1, H8,
+    KING, KNIGHT, LIGHT, PAWN, QUEEN, ROOK,
 };
 
 // #rust gen_push!(d, from, to, bits) coerces the arguments to the right types,
@@ -87,8 +86,7 @@ pub fn set_hash(d: &mut Data) {
     d.hash = 0;
     for i in 0..64 {
         if d.color[i] != EMPTY {
-            d.hash ^= d.hash_piece[d.color[i] as usize][d.piece[i] as usize]
-                [i as usize];
+            d.hash ^= d.hash_piece[d.color[i] as usize][d.piece[i] as usize][i as usize];
         }
     }
     if d.side == DARK {
@@ -270,31 +268,19 @@ pub fn gen(d: &mut Data) {
         match d.side {
             LIGHT => {
                 let col = col!(d.ep);
-                if col != 0
-                    && d.color[i_ep + 7] == LIGHT
-                    && d.piece[i_ep + 7] == PAWN
-                {
+                if col != 0 && d.color[i_ep + 7] == LIGHT && d.piece[i_ep + 7] == PAWN {
                     gen_push!(d, d.ep + 7, d.ep, 21);
                 }
-                if col != 7
-                    && d.color[i_ep + 9] == LIGHT
-                    && d.piece[i_ep + 9] == PAWN
-                {
+                if col != 7 && d.color[i_ep + 9] == LIGHT && d.piece[i_ep + 9] == PAWN {
                     gen_push!(d, d.ep + 9, d.ep, 21);
                 }
             }
             _ => {
                 let col = col!(d.ep);
-                if col != 0
-                    && d.color[i_ep - 9] == DARK
-                    && d.piece[i_ep - 9] == PAWN
-                {
+                if col != 0 && d.color[i_ep - 9] == DARK && d.piece[i_ep - 9] == PAWN {
                     gen_push!(d, d.ep - 9, d.ep, 21);
                 }
-                if col != 7
-                    && d.color[i_ep - 7] == DARK
-                    && d.piece[i_ep - 7] == PAWN
-                {
+                if col != 7 && d.color[i_ep - 7] == DARK && d.piece[i_ep - 7] == PAWN {
                     gen_push!(d, d.ep - 7, d.ep, 21);
                 }
             }
@@ -369,31 +355,19 @@ pub fn gen_caps(d: &mut Data) {
         match d.side {
             LIGHT => {
                 let col = col!(d.ep);
-                if col != 0
-                    && d.color[i_ep + 7] == LIGHT
-                    && d.piece[i_ep + 7] == PAWN
-                {
+                if col != 0 && d.color[i_ep + 7] == LIGHT && d.piece[i_ep + 7] == PAWN {
                     gen_push!(d, d.ep + 7, d.ep, 21);
                 }
-                if col != 7
-                    && d.color[i_ep + 9] == LIGHT
-                    && d.piece[i_ep + 9] == PAWN
-                {
+                if col != 7 && d.color[i_ep + 9] == LIGHT && d.piece[i_ep + 9] == PAWN {
                     gen_push!(d, d.ep + 9, d.ep, 21);
                 }
             }
             _ => {
                 let col = col!(d.ep);
-                if col != 0
-                    && d.color[i_ep - 9] == DARK
-                    && d.piece[i_ep - 9] == PAWN
-                {
+                if col != 0 && d.color[i_ep - 9] == DARK && d.piece[i_ep - 9] == PAWN {
                     gen_push!(d, d.ep - 9, d.ep, 21);
                 }
-                if col != 7
-                    && d.color[i_ep - 7] == DARK
-                    && d.piece[i_ep - 7] == PAWN
-                {
+                if col != 7 && d.color[i_ep - 7] == DARK && d.piece[i_ep - 7] == PAWN {
                     gen_push!(d, d.ep - 7, d.ep, 21);
                 }
             }

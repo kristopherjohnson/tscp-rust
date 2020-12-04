@@ -79,13 +79,7 @@ pub fn think(d: &mut Data, output: ThinkOutput) {
                         print!("{:3}  {:9}  {:5} ", i, d.nodes, x);
                     }
                     ThinkOutput::XboardOutput => {
-                        print!(
-                            "{} {} {} {}",
-                            i,
-                            x,
-                            (get_ms() - d.start_time) / 10,
-                            d.nodes
-                        );
+                        print!("{} {} {} {}", i, x, (get_ms() - d.start_time) / 10, d.nodes);
                     }
                 }
                 if output != ThinkOutput::NoOutput {

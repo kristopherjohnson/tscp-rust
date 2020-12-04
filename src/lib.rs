@@ -69,9 +69,7 @@ pub fn parse_move(d: &Data, s: &str) -> Int {
     let to = to as u8;
 
     for i in 0..d.first_move[1] {
-        if d.gen_dat[i].m.bytes().from == from
-            && d.gen_dat[i].m.bytes().to == to
-        {
+        if d.gen_dat[i].m.bytes().from == from && d.gen_dat[i].m.bytes().to == to {
             // if the move is a promotion, handle the promotion piece; assume
             // that the promotion moves occur consecutively in d.gen_dat.
             if (d.gen_dat[i].m.bytes().bits & 32) != 0 {
@@ -97,8 +95,7 @@ pub fn parse_move(d: &Data, s: &str) -> Int {
 
 pub fn move_str(m: MoveBytes) -> String {
     unsafe {
-        let from_col =
-            char::from_u32_unchecked(col!(m.from) as u32 + 'a' as u32);
+        let from_col = char::from_u32_unchecked(col!(m.from) as u32 + 'a' as u32);
         let from_row = 8 - row!(m.from);
         let to_col = char::from_u32_unchecked(col!(m.to) as u32 + 'a' as u32);
         let to_row = 8 - row!(m.to);

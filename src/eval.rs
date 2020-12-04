@@ -355,6 +355,7 @@ fn eval_lkp(d: &Data, f: usize) -> Int {
         4 => r -= 5,  // enemy pawn on the 4th rank
         _ => (),
     }
+
     r
 }
 
@@ -381,6 +382,7 @@ fn eval_dark_king(d: &Data, sq: usize) -> Int {
     }
     r *= d.piece_mat[ILIGHT];
     r /= 3100;
+
     r
 }
 

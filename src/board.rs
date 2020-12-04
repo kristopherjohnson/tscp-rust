@@ -140,22 +140,24 @@ fn attack(d: &Data, sq: usize, s: Int) -> bool {
                     }
                 },
                 _ => {
-                    for j in 0..(OFFSETS[d.piece[i] as usize] as usize) {
+                    let piece = d.piece[i] as usize;
+                    for j in 0..(OFFSETS[piece] as usize) {
                         let mut n = i as Int;
                         loop {
                             let m64 = MAILBOX64[n as usize];
-                            let offset = OFFSET[d.piece[i] as usize][j];
+                            let offset = OFFSET[piece][j];
                             n = MAILBOX[(m64 + offset) as usize];
                             if n == -1 {
                                 break;
                             }
-                            if n as usize == sq {
+                            let n = n as usize;
+                            if n == sq {
                                 return true;
                             }
-                            if d.color[n as usize] != EMPTY {
+                            if d.color[n] != EMPTY {
                                 break;
                             }
-                            if !SLIDE[d.piece[i] as usize] {
+                            if !SLIDE[piece] {
                                 break;
                             }
                         }
@@ -213,16 +215,18 @@ pub fn gen(d: &mut Data) {
                     }
                 },
                 _ => {
-                    for j in 0..(OFFSETS[d.piece[i] as usize] as usize) {
+                    let piece = d.piece[i] as usize;
+                    for j in 0..(OFFSETS[piece] as usize) {
                         let mut n = i as Int;
                         loop {
                             let m64 = MAILBOX64[n as usize];
-                            let offset = OFFSET[d.piece[i] as usize][j];
+                            let offset = OFFSET[piece][j];
                             n = MAILBOX[(m64 + offset) as usize];
                             if n == -1 {
                                 break;
                             }
-                            let color = d.color[n as usize];
+                            let n = n as usize;
+                            let color = d.color[n];
                             if color != EMPTY {
                                 if color == d.xside {
                                     gen_push!(d, i, n, 1);
@@ -230,7 +234,7 @@ pub fn gen(d: &mut Data) {
                                 break;
                             }
                             gen_push!(d, i, n, 0);
-                            if !SLIDE[d.piece[i] as usize] {
+                            if !SLIDE[piece] {
                                 break;
                             }
                         }
@@ -262,8 +266,6 @@ pub fn gen(d: &mut Data) {
 
     // generate en passant moves
     if d.ep != -1 {
-        // #rust TODO Maybe there is a better way to avoid a bunch of "as usize"
-        // casts in the expressions below.
         let i_ep = d.ep as usize;
         match d.side {
             LIGHT => {
@@ -335,11 +337,12 @@ pub fn gen_caps(d: &mut Data) {
                     }
                 },
                 _ => {
-                    for j in 0..(OFFSETS[d.piece[i] as usize] as usize) {
+                    let piece = d.piece[i] as usize;
+                    for j in 0..(OFFSETS[piece] as usize) {
                         let mut n = i as Int;
                         loop {
                             let m64 = MAILBOX64[n as usize];
-                            let offset = OFFSET[d.piece[i] as usize][j];
+                            let offset = OFFSET[piece][j];
                             n = MAILBOX[(m64 + offset) as usize];
                             if n == -1 {
                                 break;
@@ -351,7 +354,7 @@ pub fn gen_caps(d: &mut Data) {
                                 }
                                 break;
                             }
-                            if !SLIDE[d.piece[i] as usize] {
+                            if !SLIDE[piece] {
                                 break;
                             }
                         }
@@ -520,9 +523,12 @@ pub fn makemove(d: &mut Data, m: MoveBytes) -> bool {
         d.piece[from] = EMPTY;
     }
 
+    let m_to = m.to as usize;
+    let m_from = m.from as usize;
+
     // back up information so we can take the move back later.
     d.hist_dat[d.hply].m.set_bytes(m);
-    d.hist_dat[d.hply].capture = d.piece[m.to as usize];
+    d.hist_dat[d.hply].capture = d.piece[m_to];
     d.hist_dat[d.hply].castle = d.castle;
     d.hist_dat[d.hply].ep = d.ep;
     d.hist_dat[d.hply].fifty = d.fifty;
@@ -531,7 +537,7 @@ pub fn makemove(d: &mut Data, m: MoveBytes) -> bool {
     d.hply += 1;
 
     // update the castle, en passant, and fifty-move-draw variables
-    d.castle &= CASTLE_MASK[m.from as usize] & CASTLE_MASK[m.to as usize];
+    d.castle &= CASTLE_MASK[m_from] & CASTLE_MASK[m_to];
     if (m.bits & 8) != 0 {
         d.ep = match d.side {
             LIGHT => m.to as Int + 8,
@@ -547,8 +553,6 @@ pub fn makemove(d: &mut Data, m: MoveBytes) -> bool {
     }
 
     // move the piece
-    let m_to = m.to as usize;
-    let m_from = m.from as usize;
     d.color[m_to] = d.side;
     d.piece[m_to] = if (m.bits & 32) != 0 {
         m.promote as Int
@@ -598,26 +602,28 @@ pub fn takeback(d: &mut Data) {
     d.ep = d.hist_dat[d.hply].ep;
     d.fifty = d.hist_dat[d.hply].fifty;
     d.hash = d.hist_dat[d.hply].hash;
-    d.color[m.from as usize] = d.side;
-    d.piece[m.from as usize] = if (m.bits & 32) != 0 {
+    let m_from = m.from as usize;
+    let m_to = m.to as usize;
+    d.color[m_from] = d.side;
+    d.piece[m_from] = if (m.bits & 32) != 0 {
         PAWN
     } else {
-        d.piece[m.to as usize]
+        d.piece[m_to]
     };
     match d.hist_dat[d.hply].capture {
         EMPTY => {
-            d.color[m.to as usize] = EMPTY;
-            d.piece[m.to as usize] = EMPTY;
+            d.color[m_to] = EMPTY;
+            d.piece[m_to] = EMPTY;
         }
         _ => {
-            d.color[m.to as usize] = d.xside;
-            d.piece[m.to as usize] = d.hist_dat[d.hply].capture;
+            d.color[m_to] = d.xside;
+            d.piece[m_to] = d.hist_dat[d.hply].capture;
         }
     }
     if (m.bits & 2) != 0 {
         let from: usize;
         let to: usize;
-        match m.to as usize {
+        match m_to {
             G1 => {
                 from = F1;
                 to = H1;

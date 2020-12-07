@@ -5,10 +5,10 @@
 //
 // Rust port by Kristopher Johnson
 
-use crate::data::{
+use super::data::{
     Data, CASTLE_MASK, INIT_COLOR, INIT_PIECE, MAILBOX, MAILBOX64, OFFSET, OFFSETS, SLIDE,
 };
-use crate::defs::{
+use super::defs::{
     Int, MoveBytes, A1, A8, B1, B8, C1, C8, D1, D8, DARK, E1, E8, EMPTY, F1, F8, G1, G8, H1, H8,
     KING, KNIGHT, LIGHT, PAWN, QUEEN, ROOK,
 };

@@ -5,11 +5,12 @@
 //
 // Rust port by Kristopher Johnson
 
-use crate::board;
-use crate::book;
-use crate::data::Data;
-use crate::defs::{Int, Move, HIST_STACK, MAX_PLY};
-use crate::eval;
+use super::board;
+use super::book;
+use super::data::Data;
+use super::defs::{Int, Move, HIST_STACK, MAX_PLY};
+use super::eval;
+use super::util;
 
 use std::io;
 use std::io::Write;
@@ -43,7 +44,7 @@ pub fn think(d: &mut Data, output: ThinkOutput) {
         return;
     }
 
-    d.start_time = crate::get_ms();
+    d.start_time = util::get_ms();
     d.stop_time = d.start_time + d.max_time as u128;
 
     d.ply = 0;
@@ -83,14 +84,14 @@ pub fn think(d: &mut Data, output: ThinkOutput) {
                             "{} {} {} {}",
                             i,
                             x,
-                            (crate::get_ms() - d.start_time) / 10,
+                            (util::get_ms() - d.start_time) / 10,
                             d.nodes
                         );
                     }
                 }
                 if output != ThinkOutput::NoOutput {
                     for j in 0..d.pv_length[0] {
-                        print!(" {}", crate::move_str(d.pv[0][j].bytes()));
+                        print!(" {}", util::move_str(d.pv[0][j].bytes()));
                     }
                     println!();
                     io::stdout().flush().expect("flush");
@@ -333,7 +334,7 @@ fn sort(d: &mut Data, from: usize) {
 
 fn checkup(d: &Data) -> bool {
     // is the engine's time up? if so, unwind back to think()
-    if crate::get_ms() >= d.stop_time {
+    if util::get_ms() >= d.stop_time {
         return false;
     }
     true

@@ -5,8 +5,8 @@
 //
 // Rust port by Kristopher Johnson
 
-use crate::data::Data;
-use crate::defs::{Int, BISHOP, EMPTY, IDARK, ILIGHT, IPAWN, KING, KNIGHT, LIGHT, PAWN, ROOK};
+use super::data::Data;
+use super::defs::{Int, BISHOP, EMPTY, IDARK, ILIGHT, IPAWN, KING, KNIGHT, LIGHT, PAWN, ROOK};
 
 const DOUBLED_PAWN_PENALTY: Int = 10;
 const ISOLATED_PAWN_PENALTY: Int = 20;

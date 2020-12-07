@@ -5,7 +5,7 @@
 //
 // Rust port by Kristopher Johnson
 
-use crate::defs::{Gen, Hist, Int, Move, DARK, GEN_STACK, HIST_STACK, LIGHT, MAX_PLY};
+use super::defs::{Gen, Hist, Int, Move, DARK, GEN_STACK, HIST_STACK, LIGHT, MAX_PLY};
 
 // #rustc In the original C code, all the elements of the Data struct below are
 // global variables.  In Rust, we wrap them all in a struct so that we don't

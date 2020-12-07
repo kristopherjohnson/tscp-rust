@@ -9,8 +9,10 @@ use std::fs::File;
 use std::io::prelude::*;
 use std::io::BufReader;
 
-use crate::data::Data;
-use crate::defs::Int;
+use super::util;
+
+use super::data::Data;
+use super::defs::Int;
 
 // #rust The original C code keeps the book.txt file open throughout the
 // lifetime of the program and re-reads its contents whenever it wants to look
@@ -69,7 +71,7 @@ pub fn book_move(d: &Data) -> Int {
     let mut line = String::from("");
     let mut j: Int;
     for i in 0..d.hply {
-        line = line + &format!("{} ", crate::move_str(d.hist_dat[i].m.bytes()));
+        line = line + &format!("{} ", util::move_str(d.hist_dat[i].m.bytes()));
     }
 
     // compare line to each line in the opening book
@@ -79,7 +81,7 @@ pub fn book_move(d: &Data) -> Int {
         // starts_with() method.
         if book_line.starts_with(&line) {
             // parse the book move that continues the line
-            let m = crate::parse_move(d, &book_line[line.len()..]);
+            let m = util::parse_move(d, &book_line[line.len()..]);
             if m == -1 {
                 continue;
             }

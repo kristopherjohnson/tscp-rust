@@ -9,25 +9,18 @@ use std::io;
 use std::io::prelude::*;
 use std::time::{SystemTime, UNIX_EPOCH};
 
-extern crate libc;
+use super::board;
+use super::book;
+use super::scan;
+use super::search;
 
-#[macro_use]
-pub mod defs;
-
-pub mod board;
-pub mod book;
-pub mod data;
-pub mod eval;
-pub mod scan;
-pub mod search;
-
-use crate::data::{Data, PIECE_CHAR};
-use crate::defs::{Int, MoveBytes, BISHOP, DARK, EMPTY, KNIGHT, LIGHT, ROOK};
-use crate::search::ThinkOutput::*;
+use super::data::{Data, PIECE_CHAR};
+use super::defs::{Int, MoveBytes, BISHOP, DARK, EMPTY, KNIGHT, LIGHT, ROOK};
+use super::search::ThinkOutput::*;
 
 /// get_ms() returns the milliseconds elapsed since midnight, January 1, 1970
 
-fn get_ms() -> u128 {
+pub fn get_ms() -> u128 {
     SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .expect("system time error")

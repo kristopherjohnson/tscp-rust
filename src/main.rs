@@ -8,13 +8,22 @@
 use std::io;
 use std::io::prelude::*;
 
-use tscp::board;
-use tscp::book;
-use tscp::data::Data;
-use tscp::defs::EMPTY;
-use tscp::scan;
-use tscp::search;
-use tscp::search::ThinkOutput::*;
+extern crate libc;
+
+#[macro_use]
+mod defs;
+
+mod board;
+mod book;
+mod data;
+mod eval;
+mod scan;
+mod search;
+pub mod util;
+
+use data::Data;
+use defs::EMPTY;
+use search::ThinkOutput::*;
 
 const BANNER: [&str; 9] = [
     "",
@@ -71,11 +80,11 @@ fn main() {
                 continue;
             }
             let m = d.pv[0][0].bytes();
-            println!("Computer's move: {}", tscp::move_str(m));
+            println!("Computer's move: {}", util::move_str(m));
             board::makemove(&mut d, m);
             d.ply = 0;
             board::gen(&mut d);
-            tscp::print_result(&mut d);
+            util::print_result(&mut d);
             continue;
         }
 
@@ -143,12 +152,12 @@ fn main() {
                 continue;
             }
             "d" => {
-                tscp::print_board(&d);
+                util::print_board(&d);
                 continue;
             }
             "bench" => {
                 computer_side = EMPTY;
-                tscp::bench(&mut d);
+                util::bench(&mut d);
                 continue;
             }
             "bye" => {
@@ -156,7 +165,7 @@ fn main() {
                 break;
             }
             "xboard" => {
-                tscp::xboard(&mut d);
+                util::xboard(&mut d);
                 break;
             }
             "help" => {
@@ -165,7 +174,7 @@ fn main() {
             }
             _ => {
                 // maybe the user entered a move?
-                let m = tscp::parse_move(&d, &s);
+                let m = util::parse_move(&d, &s);
                 if m == -1 {
                     println!("Illegal move.");
                 } else {
@@ -175,7 +184,7 @@ fn main() {
                     } else {
                         d.ply = 0;
                         board::gen(&mut d);
-                        tscp::print_result(&mut d);
+                        util::print_result(&mut d);
                     }
                 }
             }

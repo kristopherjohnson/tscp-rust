@@ -19,7 +19,8 @@ mod data;
 mod eval;
 mod scan;
 mod search;
-pub mod util;
+mod util;
+mod xboard;
 
 use data::Data;
 use defs::EMPTY;
@@ -165,7 +166,7 @@ fn main() {
                 break;
             }
             "xboard" => {
-                util::xboard(&mut d);
+                xboard::xboard(&mut d);
                 break;
             }
             "help" => {

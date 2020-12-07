@@ -8,7 +8,6 @@
 /// xboard() is a substitute for main() that is XBoard and WinBoard compatible.
 /// See the following page for details:
 /// <http://www.research.digital.com/SRC/personal/mann/xboard/engine-intf.html>
-
 use std::io;
 use std::io::prelude::*;
 
@@ -17,7 +16,7 @@ use super::scan;
 use super::search;
 use super::util;
 
-use super::data::{Data};
+use super::data::Data;
 use super::defs::{DARK, EMPTY, LIGHT};
 use super::search::ThinkOutput::*;
 

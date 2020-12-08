@@ -48,8 +48,8 @@ pub fn bench(d: &mut Data) {
     // code.
     book::close_book(d);
 
-    d.color[..64].clone_from_slice(&BENCH_COLOR[..64]);
-    d.piece[..64].clone_from_slice(&BENCH_PIECE[..64]);
+    d.color[..].clone_from_slice(&BENCH_COLOR[..]);
+    d.piece[..].clone_from_slice(&BENCH_PIECE[..]);
     d.side = LIGHT;
     d.xside = DARK;
     d.castle = 0;

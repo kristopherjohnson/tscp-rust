@@ -8,12 +8,10 @@
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use super::board;
-use super::book;
 use super::search;
 
 use super::data::{Data, PIECE_CHAR};
 use super::defs::{Int, MoveBytes, BISHOP, DARK, EMPTY, KNIGHT, LIGHT, ROOK};
-use super::search::ThinkOutput::*;
 
 /// get_ms() returns the milliseconds elapsed since midnight, January 1, 1970
 
@@ -152,87 +150,4 @@ pub fn print_result(d: &mut Data) {
     } else if d.fifty >= 100 {
         println!("1/2-1/2 {{Draw by fifty move rule}}");
     }
-}
-
-#[rustfmt::skip]
-const BENCH_COLOR: [Int; 64] = [
-    6, 1, 1, 6, 6, 1, 1, 6,
-    1, 6, 6, 6, 6, 1, 1, 1,
-    6, 1, 6, 1, 1, 6, 1, 6,
-    6, 6, 6, 1, 6, 6, 0, 6,
-    6, 6, 1, 0, 6, 6, 6, 6,
-    6, 6, 0, 6, 6, 6, 0, 6,
-    0, 0, 0, 6, 6, 0, 0, 0,
-    0, 6, 0, 6, 0, 6, 0, 6
-];
-
-#[rustfmt::skip]
-const BENCH_PIECE: [Int; 64] = [
-    6, 3, 2, 6, 6, 3, 5, 6,
-    0, 6, 6, 6, 6, 0, 0, 0,
-    6, 0, 6, 4, 0, 6, 1, 6,
-    6, 6, 6, 1, 6, 6, 1, 6,
-    6, 6, 0, 0, 6, 6, 6, 6,
-    6, 6, 0, 6, 6, 6, 0, 6,
-    0, 0, 4, 6, 6, 0, 2, 0,
-    3, 6, 2, 6, 3, 6, 5, 6
-];
-
-/// bench: This is a little benchmark code that calculates how many nodes per
-/// second TSCP searches.  It sets the position to move 17 of Bobby Fischer vs.
-/// J. Sherwin, New Jersey State Open Championship, 9/2/1957.  Then it searches
-/// five ply three times. It calculates nodes per second from the best time.
-
-pub fn bench(d: &mut Data) {
-    // setting the position to a non-initial position confuses the opening book
-    // code.
-    book::close_book(d);
-
-    d.color[..64].clone_from_slice(&BENCH_COLOR[..64]);
-    d.piece[..64].clone_from_slice(&BENCH_PIECE[..64]);
-    d.side = LIGHT;
-    d.xside = DARK;
-    d.castle = 0;
-    d.ep = -1;
-    d.fifty = 0;
-    d.ply = 0;
-    d.hply = 0;
-    board::set_hash(d);
-    print_board(d);
-    d.max_time = 1 << 25;
-    d.max_depth = 5;
-
-    let mut t: [Int; 3] = [0; 3];
-    for x in &mut t {
-        search::think(d, NormalOutput);
-        *x = (get_ms() - d.start_time) as Int;
-        println!("Time: {} ms", *x);
-    }
-    if t[1] < t[0] {
-        t[0] = t[1];
-    }
-    if t[2] < t[0] {
-        t[0] = t[2];
-    }
-
-    println!();
-    println!("Nodes: {}", d.nodes);
-    println!("Best time: {} ms", t[0]);
-    if t[0] == 0 {
-        println!("(invalid)");
-        return;
-    }
-    let nps = d.nodes / t[0];
-    let nps = nps as f64 * 1000.0;
-
-    // Score: 1.00 = my Athlon XP 2000+
-    println!(
-        "Nodes per second: {} (Score: {:.3})",
-        nps as i32,
-        nps / 243_169.0
-    );
-
-    board::init_board(d);
-    book::open_book(d);
-    board::gen(d);
 }

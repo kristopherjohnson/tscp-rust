@@ -13,6 +13,7 @@ extern crate libc;
 #[macro_use]
 mod defs;
 
+mod bench;
 mod board;
 mod book;
 mod data;
@@ -158,7 +159,7 @@ fn main() {
             }
             "bench" => {
                 computer_side = EMPTY;
-                util::bench(&mut d);
+                bench::bench(&mut d);
                 continue;
             }
             "bye" => {

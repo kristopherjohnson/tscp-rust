@@ -68,12 +68,7 @@ pub fn bench(d: &mut Data) {
         *x = (util::get_ms() - d.start_time) as Int;
         println!("Time: {} ms", *x);
     }
-    if t[1] < t[0] {
-        t[0] = t[1];
-    }
-    if t[2] < t[0] {
-        t[0] = t[2];
-    }
+    t.sort();
 
     println!();
     println!("Nodes: {}", d.nodes);

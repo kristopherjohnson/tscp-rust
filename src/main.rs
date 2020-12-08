@@ -27,40 +27,29 @@ use data::Data;
 use defs::EMPTY;
 use search::ThinkOutput::*;
 
-const BANNER: [&str; 9] = [
-    "",
-    "Tom Kerrigan's Simple Chess Program (TSCP)",
-    "version 1.81c, 2/3/19",
-    "Copyright 2019 Tom Kerrigan",
-    "",
-    "(Rust port by Kristopher Johnson)",
-    "",
-    "\"help\" displays a list of commands.",
-    "",
-];
+const BANNER: &str = "\n\
+    Tom Kerrigan's Simple Chess Program (TSCP)\n\
+    version 1.81c, 2/3/19\n\
+    Copyright 2019 Tom Kerrigan\n\
+    \n\
+    (Rust port by Kristopher Johnson)\n\
+    \n\
+    \"help\" displays a list of commands.\n";
 
-const HELP: [&str; 11] = [
-    "on - computer plays for the side to move",
-    "off - computer stops playing",
-    "st n - search for n seconds per move",
-    "sd n - search n ply per move",
-    "undo - takes back a move",
-    "new - starts a new game",
-    "d - display the board",
-    "bench - run the built-in benchmark",
-    "bye - exit the program",
-    "xboard - switch to XBoard mode",
-    "Enter moves in coordinate notation, e.g., e2e4, e7e8Q",
-];
-
-fn print_lines(lines: &[&str]) {
-    for line in lines.iter() {
-        println!("{}", line);
-    }
-}
+const HELP: &str = "on - computer plays for the side to move\n\
+    off - computer stops playing\n\
+    st n - search for n seconds per move\n\
+    sd n - search n ply per move\n\
+    undo - takes back a move\n\
+    new - starts a new game\n\
+    d - display the board\n\
+    bench - run the built-in benchmark\n\
+    bye - exit the program\n\
+    xboard - switch to XBoard mode\n\
+    Enter moves in coordinate notation, e.g., e2e4, e7e8Q";
 
 fn main() {
-    print_lines(&BANNER);
+    println!("{}", BANNER);
 
     let mut d = Data::new();
     board::init_hash(&mut d);
@@ -171,7 +160,7 @@ fn main() {
                 break;
             }
             "help" => {
-                print_lines(&HELP);
+                println!("{}", HELP);
                 continue;
             }
             _ => {

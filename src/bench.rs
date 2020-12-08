@@ -68,7 +68,7 @@ pub fn bench(d: &mut Data) {
         *x = (util::get_ms() - d.start_time) as Int;
         println!("Time: {} ms", *x);
     }
-    t.sort();
+    t.sort_unstable();
 
     println!();
     println!("Nodes: {}", d.nodes);

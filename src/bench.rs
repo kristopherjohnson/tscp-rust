@@ -91,3 +91,65 @@ pub fn bench(d: &mut Data) {
     book::open_book(d);
     board::gen(d);
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    use super::super::board;
+    use super::super::book;
+    use super::super::search;
+    use super::super::util;
+
+    use super::super::data::Data;
+    use super::super::defs::{Int, DARK, LIGHT};
+
+    /// This code is the same as bench::bench(), except that it only performs
+    /// one iteration and checks the results rather than printing them.
+    ///
+    /// It is ignored by default because it takes a pretty long time to run in a
+    /// debug build.
+    #[test]
+    #[ignore]
+    fn test_bench() {
+        let mut d = Data::new();
+        board::init_hash(&mut d);
+        board::init_board(&mut d);
+        book::open_book(&mut d);
+        board::gen(&mut d);
+
+        // TODO: factor out this initialization code for use by both bench() and
+        // test_bench().
+        book::close_book(&mut d);
+        d.color[..].clone_from_slice(&BENCH_COLOR[..]);
+        d.piece[..].clone_from_slice(&BENCH_PIECE[..]);
+        d.side = LIGHT;
+        d.xside = DARK;
+        d.castle = 0;
+        d.ep = -1;
+        d.fifty = 0;
+        d.ply = 0;
+        d.hply = 0;
+        board::set_hash(&mut d);
+        d.max_time = 1 << 25;
+        d.max_depth = 5;
+
+        search::think(&mut d, NormalOutput);
+        let _ = (util::get_ms() - d.start_time) as Int;
+
+        // TODO: Verify these expected results:
+        // ply      nodes  score  pv
+        //  1        151     20  c1e3
+        //  2       4003      5  g5e4 d6c7
+        //  3       9712     30  g5e4 d6c7 c1e3
+        //  4     142237     20  h2h4 d5f6 g5e4 d6d8
+        //  5     497530     28  h2h4 d5f6 c2a4 h7h6 g5e4
+
+        //assert_eq!(ply, 5);
+        assert_eq!(d.nodes, 497530);
+        //assert_eq!(score, 28);
+        //assert_eq!(pv, "h2h4 d5f6 c2a4 h7h6 g5e4");
+
+        // TODO: measure performance
+    }
+}

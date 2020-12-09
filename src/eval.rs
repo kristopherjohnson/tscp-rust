@@ -344,7 +344,7 @@ fn eval_lkp(d: &Data, f: usize) -> Int {
         6 => (),      // pawn hasn't moved
         5 => r -= 10, // pawn moved one square
         0 => r -= 25, // no pawn on this file
-        _ => (),      // pawn moved more than one square
+        _ => r -= 20, // pawn moved more than one square
     }
 
     let rank_dark = d.pawn_rank[IDARK][f];

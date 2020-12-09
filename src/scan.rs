@@ -39,7 +39,7 @@ pub fn scan_token() -> io::Result<String> {
 ///
 /// # Example
 /// ```
-/// use crate::scan::scan_token_from;
+/// use tscp::scan::scan_token_from;
 ///
 /// let s = String::from("  one   two three  ");
 /// let mut reader = s.as_bytes();
@@ -116,7 +116,7 @@ pub fn scan_int() -> io::Result<Int> {
 ///
 /// # Example
 /// ```
-/// use crate::scan::scan_int_from;
+/// use tscp::scan::scan_int_from;
 ///
 /// let s = String::from("  123  456 789  ");
 /// let mut reader = s.as_bytes();
@@ -153,7 +153,7 @@ fn read_byte(reader: &mut dyn Read) -> ReadByteResult {
 ///
 /// # Examples
 /// ```
-/// use crate::scan::is_whitespace;
+/// use tscp::scan::is_whitespace;
 ///
 /// assert!(is_whitespace(' ' as u8));
 /// assert!(is_whitespace('\t' as u8));
